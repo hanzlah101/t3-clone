@@ -20,6 +20,10 @@ const eslintConfig = [
         {
           fixStyle: "inline-type-imports"
         }
+      ],
+      "@typescript-eslint/no-unused-vars": [
+        "error",
+        { argsIgnorePattern: "^_", varsIgnorePattern: "^_" }
       ]
     }
   }

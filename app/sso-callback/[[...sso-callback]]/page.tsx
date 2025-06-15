@@ -5,7 +5,7 @@ export default function SSOCallback() {
   return (
     <>
       <div className="flex min-h-svh items-center justify-center">
-        <Spinner className="size-5" />
+        <Spinner />
       </div>
       <AuthenticateWithRedirectCallback />
     </>
