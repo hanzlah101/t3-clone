@@ -9,20 +9,15 @@ export const messageRole = v.union(
 
 export const messageStatus = v.union(
   v.literal("waiting"),
-  v.literal("thinking"),
-  v.literal("streaming"),
   v.literal("completed"),
   v.literal("error"),
-  v.literal("cancelled"),
-  v.literal("deleted")
+  v.literal("cancelled")
 )
 
 export const messageModelSchema = v.optional(
   v.object({
-    model: v.string(),
-    temp: v.optional(v.number()),
-    topP: v.optional(v.number()),
-    topK: v.optional(v.number()),
+    name: v.string(),
+    temperature: v.optional(v.number()),
     search: v.boolean()
   })
 )
@@ -31,13 +26,11 @@ export default defineSchema({
   threads: defineTable({
     title: v.string(),
     userId: v.string(),
+    modelId: v.string(),
     updatedAt: v.optional(v.number()),
-    deletedAt: v.optional(v.number()),
     lastMessageAt: v.number(),
     branchParentThreadId: v.optional(v.id("threads"))
-  })
-    .index("by_user_id", ["userId"])
-    .index("by_user_id_and_deleted", ["userId", "deletedAt"]),
+  }).index("by_user_id", ["userId"]),
   messages: defineTable({
     threadId: v.id("threads"),
     reasoning: v.optional(v.string()),
@@ -50,5 +43,6 @@ export default defineSchema({
     model: v.optional(messageModelSchema)
   })
     .index("by_thread_id", ["threadId"])
+    .index("by_user_id", ["userId"])
     .index("by_thread_and_user_id", ["userId", "threadId"])
 })

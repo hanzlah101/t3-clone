@@ -2,7 +2,6 @@ import { ConvexError, v } from "convex/values"
 
 import { mutation, query } from "./_generated/server"
 import { messageModelSchema, messageRole, messageStatus } from "./schema"
-import { type Doc } from "./_generated/dataModel"
 
 export const list = query({
   args: {
@@ -19,7 +18,7 @@ export const list = query({
       )
       .collect()
 
-    return messages
+    return messages.filter((msg) => !!msg.content)
   }
 })
 
@@ -57,38 +56,28 @@ export const createAssistantAndUserMessages = mutation({
   args: {
     threadId: v.id("threads"),
     prompt: v.string(),
-    userId: v.string()
+    userId: v.string(),
+    model: messageModelSchema
   },
   handler: async (ctx, args) => {
-    const userMessage = {
+    await ctx.db.insert("messages", {
       threadId: args.threadId,
       content: args.prompt,
       userId: args.userId,
       role: "user",
       status: "completed"
-    } as Doc<"messages">
+    })
 
-    const userMessageId = await ctx.db.insert("messages", userMessage)
-
-    userMessage._id = userMessageId
-    userMessage._creationTime = Date.now()
-
-    const assistantMessage = {
+    await ctx.db.insert("messages", {
       threadId: args.threadId,
       content: "",
       userId: args.userId,
       role: "assistant",
-      status: "waiting"
-    } as Doc<"messages">
-
-    const assistantMessageId = await ctx.db.insert("messages", assistantMessage)
-
-    assistantMessage._id = assistantMessageId
-    assistantMessage._creationTime = Date.now()
+      status: "waiting",
+      model: args.model
+    })
 
     await ctx.db.patch(args.threadId, { lastMessageAt: Date.now() })
-
-    return [userMessage, assistantMessage]
   }
 })
 

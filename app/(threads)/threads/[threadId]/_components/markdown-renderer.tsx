@@ -1,12 +1,15 @@
 "use client"
 
-import { memo, useMemo } from "react"
+import { memo } from "react"
 import { type BundledLanguage } from "shiki"
 import ReactMarkdown, { type Options } from "react-markdown"
 import remarkGfm from "remark-gfm"
+import remarkMath from "remark-math"
+import rehypeKatex from "rehype-katex"
+
+import "katex/dist/katex.min.css"
 
 import { cn } from "@/lib/utils"
-import { FILENAMES } from "@/lib/constants"
 import {
   CodeBlock,
   CodeBlockBody,
@@ -114,10 +117,7 @@ const components: Options["components"] = {
   ),
   table: ({ node: _, className, ...props }) => (
     <table
-      className={cn(
-        "mt-2 w-full overflow-y-auto rounded-md text-[15px]",
-        className
-      )}
+      className={cn("w-full overflow-y-auto rounded-md text-[15px]", className)}
       {...props}
     />
   ),
@@ -148,13 +148,18 @@ const components: Options["components"] = {
       {...props}
     />
   ),
+  blockquote: ({ node: _, className, ...props }) => (
+    <blockquote
+      className={cn(
+        "border-l-primary my-2 border-l-4 pl-3 text-[15px] italic",
+        className
+      )}
+      {...props}
+    />
+  ),
   code: function Code({ node: _, className, children, ...props }) {
     const match = /language-(\w+)/.exec(className || "")
     const language = match ? match[1] : null
-
-    const filename = useMemo(() => {
-      return language ? (FILENAMES[language] ?? `code.${language}`) : ""
-    }, [language])
 
     if (!language) {
       return (
@@ -172,14 +177,14 @@ const components: Options["components"] = {
     const data: CodeBlockProps["data"] = [
       {
         language,
-        filename,
+        filename: language,
         code: String(children).replace(/\n$/, "")
       }
     ]
 
     return (
       <CodeBlock
-        className={cn("my-4", className)}
+        className={cn("my-2", className)}
         data={data}
         defaultValue={data[0].language}
       >
@@ -218,7 +223,8 @@ export const MarkdownRenderer = memo(
       {...props}
     >
       <ReactMarkdown
-        remarkPlugins={[remarkGfm]}
+        remarkPlugins={[remarkGfm, remarkMath]}
+        rehypePlugins={[rehypeKatex]}
         components={components}
         {...options}
       >
