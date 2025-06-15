@@ -4,11 +4,11 @@ import { useTheme } from "next-themes"
 import { Toaster as Sonner, type ToasterProps } from "sonner"
 
 function Toaster({ ...props }: ToasterProps) {
-  const { resolvedTheme } = useTheme()
+  const { theme } = useTheme()
 
   return (
     <Sonner
-      theme={resolvedTheme as ToasterProps["theme"]}
+      theme={theme as ToasterProps["theme"]}
       style={
         {
           "--normal-bg": "var(--popover)",
