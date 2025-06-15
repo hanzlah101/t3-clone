@@ -1,8 +1,6 @@
 "use client"
 
 import * as React from "react"
-import { toast } from "sonner"
-import { CheckIcon, CopyIcon } from "lucide-react"
 import {
   type IconType,
   SiAstro,
@@ -90,84 +88,86 @@ import {
 } from "shiki"
 
 import { cn } from "@/lib/utils"
-import { Button } from "@/components/ui/button"
+import { CopyButton } from "./copy-button"
 
 const filenameIconMap = {
-  ".env": SiDotenv,
-  "*.astro": SiAstro,
+  "*.env": SiDotenv,
+  "*astro": SiAstro,
   "biome.json": SiBiome,
-  ".bowerrc": SiBower,
+  "*bowerrc": SiBower,
   "bun.lockb": SiBun,
-  "*.c": SiC,
-  "*.cpp": SiCplusplus,
-  ".circleci/config.yml": SiCircleci,
-  "*.coffee": SiCoffeescript,
-  "*.module.css": SiCssmodules,
-  "*.css": SiCss,
-  "*.dart": SiDart,
-  Dockerfile: SiDocker,
+  "*c": SiC,
+  "*cpp": SiCplusplus,
+  "*circleci/config.yml": SiCircleci,
+  "*coffee": SiCoffeescript,
+  "*module.css": SiCssmodules,
+  "*css": SiCss,
+  "*dart": SiDart,
+  dockerfile: SiDocker,
   "docusaurus.config.js": SiDocusaurus,
-  ".editorconfig": SiEditorconfig,
-  ".eslintrc": SiEslint,
-  "eslint.config.*": SiEslint,
-  "gatsby-config.*": SiGatsby,
-  ".gitignore": SiGitignoredotio,
-  "*.go": SiGo,
-  "*.yaml": SiYaml,
-  "*.yml": SiYaml,
-  "*.graphql": SiGraphql,
-  "*.sh": SiGnubash,
-  "Gruntfile.*": SiGrunt,
-  "gulpfile.*": SiGulp,
-  "*.hbs": SiHandlebarsdotjs,
-  "*.html": SiHtml5,
-  "*.js": SiJavascript,
-  "*.json": SiJson,
-  "*.test.js": SiJest,
-  "*.less": SiLess,
-  "*.md": SiMarkdown,
-  "*.mdx": SiMdx,
-  "mintlify.json": SiMintlify,
-  "mocha.opts": SiMocha,
-  "*.mustache": SiHandlebarsdotjs,
-  "*.sql": SiMysql,
-  "next.config.*": SiNextdotjs,
-  "*.pl": SiPerl,
-  "*.php": SiPhp,
-  "postcss.config.*": SiPostcss,
-  "prettier.config.*": SiPrettier,
-  "*.prisma": SiPrisma,
-  "*.pug": SiPug,
-  "*.py": SiPython,
-  "*.r": SiR,
-  "*.rb": SiRuby,
-  "*.jsx": SiReact,
-  "*.tsx": SiReact,
-  "readme.md": SiReadme,
-  "*.rdb": SiRedis,
-  "remix.config.*": SiRemix,
-  "*.riv": SiRive,
-  "rollup.config.*": SiRollupdotjs,
-  "sanity.config.*": SiSanity,
-  "*.sass": SiSass,
-  "*.scss": SiSass,
-  "*.sc": SiScala,
-  "*.scala": SiScala,
-  "sentry.client.config.*": SiSentry,
-  "components.json": SiShadcnui,
-  "storybook.config.*": SiStorybook,
-  "stylelint.config.*": SiStylelint,
-  ".sublime-settings": SiSublimetext,
-  "*.svelte": SiSvelte,
-  "*.svg": SiSvg,
-  "*.swift": SiSwift,
-  "tailwind.config.*": SiTailwindcss,
-  "*.toml": SiToml,
-  "*.ts": SiTypescript,
-  "vercel.json": SiVercel,
-  "vite.config.*": SiVite,
-  "*.vue": SiVuedotjs,
-  "*.wasm": SiWebassembly
+  "*editorconfig": SiEditorconfig,
+  "*eslintrc": SiEslint,
+  "*eslint.config.*": SiEslint,
+  "*gatsby-config.*": SiGatsby,
+  "*gitignore": SiGitignoredotio,
+  "*go": SiGo,
+  "*yaml": SiYaml,
+  "*yml": SiYaml,
+  "*graphql": SiGraphql,
+  "*sh": SiGnubash,
+  "*gruntfile.*": SiGrunt,
+  "*gulpfile.*": SiGulp,
+  "*hbs": SiHandlebarsdotjs,
+  "*html": SiHtml5,
+  "*js": SiJavascript,
+  "*javascript": SiJavascript,
+  "*json": SiJson,
+  "*test.js": SiJest,
+  "*less": SiLess,
+  "*md": SiMarkdown,
+  "*mdx": SiMdx,
+  "*mintlify.json": SiMintlify,
+  "*mocha.opts": SiMocha,
+  "*mustache": SiHandlebarsdotjs,
+  "*sql": SiMysql,
+  "*next.config.*": SiNextdotjs,
+  "*pl": SiPerl,
+  "*php": SiPhp,
+  "*postcss.config.*": SiPostcss,
+  "*prettier.config.*": SiPrettier,
+  "*prisma": SiPrisma,
+  "*pug": SiPug,
+  "*py": SiPython,
+  "*r": SiR,
+  "*rb": SiRuby,
+  "*jsx": SiReact,
+  "*tsx": SiReact,
+  "*readme.md": SiReadme,
+  "*rdb": SiRedis,
+  "*remix.config.*": SiRemix,
+  "*riv": SiRive,
+  "*rollup.config.*": SiRollupdotjs,
+  "*sanity.config.*": SiSanity,
+  "*sass": SiSass,
+  "*scss": SiSass,
+  "*sc": SiScala,
+  "*scala": SiScala,
+  "*sentry.client.config.*": SiSentry,
+  "*components.json": SiShadcnui,
+  "*storybook.config.*": SiStorybook,
+  "*stylelint.config.*": SiStylelint,
+  "*sublime-settings": SiSublimetext,
+  "*svelte": SiSvelte,
+  "*svg": SiSvg,
+  "*swift": SiSwift,
+  "*tailwind.config.*": SiTailwindcss,
+  "*toml": SiToml,
+  "*ts": SiTypescript,
+  "*typescript": SiTypescript,
+  "*vercel.json": SiVercel,
+  "*vite.config.*": SiVite,
+  "*vue": SiVuedotjs,
+  "*wasm": SiWebassembly
 }
 
 const lineNumberClassNames = cn(
@@ -334,7 +334,7 @@ export const CodeBlockHeader = ({
 }: CodeBlockHeaderProps) => (
   <div
     className={cn(
-      "dark:bg-base-900 bg-base-200 flex flex-row items-center p-1",
+      "dark:bg-base-900 bg-base-200 flex flex-row items-center p-1 pr-2",
       className
     )}
     {...props}
@@ -400,54 +400,25 @@ export const CodeBlockFilename = ({
   )
 }
 
-export type CodeBlockCopyButtonProps = React.ComponentProps<typeof Button>
+export type CodeBlockCopyButtonProps = Omit<
+  React.ComponentProps<typeof CopyButton>,
+  "text"
+>
 
 export const CodeBlockCopyButton = ({
   className,
   ...props
 }: CodeBlockCopyButtonProps) => {
-  const [isCopied, setIsCopied] = React.useState(false)
   const { data, value } = React.useContext(CodeBlockContext)
   const code = data.find((item) => item.language === value)?.code
 
-  const copyToClipboard = () => {
-    if (code) {
-      navigator.clipboard.writeText(code).then(
-        () => {
-          setIsCopied(true)
-          setTimeout(() => setIsCopied(false), 1500)
-        },
-        () => toast.error("Failed to copy code to clipboard")
-      )
-    }
-  }
-
   return (
-    <Button
-      variant="ghost"
-      size="icon"
-      onClick={copyToClipboard}
-      className={cn(
-        "hover:bg-base-300 dark:hover:bg-base-800 relative size-7 shrink-0",
-        className
-      )}
+    <CopyButton
+      text={code ?? ""}
+      tooltip="Copy code"
+      className={cn("hover:bg-base-300 dark:hover:bg-base-800", className)}
       {...props}
-    >
-      <div className="absolute inset-0 flex items-center justify-center">
-        <CheckIcon
-          className={cn(
-            "size-3.5 transition-transform ease-in-out",
-            isCopied ? "scale-100" : "scale-0"
-          )}
-        />
-      </div>
-      <CopyIcon
-        className={cn(
-          "size-3.5 transition-transform ease-in-out",
-          isCopied ? "scale-0" : "scale-100"
-        )}
-      />
-    </Button>
+    />
   )
 }
 

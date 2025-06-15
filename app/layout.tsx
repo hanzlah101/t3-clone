@@ -6,6 +6,7 @@ import { Geist, Geist_Mono } from "next/font/google"
 import { ConvexProvider } from "@/components/convex-provider"
 import { ThemeProvider } from "@/components/theme-provider"
 import { Toaster } from "@/components/ui/sonner"
+import { TooltipProvider } from "@/components/ui/tooltip"
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -34,8 +35,12 @@ export default function RootLayout({
       >
         <ThemeProvider>
           <ConvexProvider>
-            <Toaster />
-            {children}
+            <TooltipProvider>
+              <Toaster />
+              <div vaul-drawer-wrapper="" className="bg-background">
+                {children}
+              </div>
+            </TooltipProvider>
           </ConvexProvider>
         </ThemeProvider>
       </body>

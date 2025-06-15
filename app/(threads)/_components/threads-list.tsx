@@ -2,13 +2,14 @@
 
 import Link from "next/link"
 import { useMemo } from "react"
-import { useParams } from "next/navigation"
+import { useParams, useRouter } from "next/navigation"
 import { useQuery } from "convex/react"
 import { useAuth } from "@clerk/nextjs"
 import { isToday, isYesterday, subDays, isAfter, subYears } from "date-fns"
 import { type FunctionReturnType } from "convex/server"
 
 import { api } from "@/convex/_generated/api"
+import { BranchIcon } from "@/components/icons/branch"
 import {
   SidebarGroup,
   SidebarGroupContent,
@@ -17,6 +18,11 @@ import {
   SidebarMenuButton,
   SidebarMenuItem
 } from "@/components/ui/sidebar"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger
+} from "@/components/ui/tooltip"
 
 function getDateGroup(updatedAt: number) {
   const now = new Date()
@@ -33,6 +39,7 @@ export function ThreadsList({
 }: {
   initialThreads: FunctionReturnType<typeof api.threads.list>
 }) {
+  const router = useRouter()
   const { threadId } = useParams()
   const { isSignedIn } = useAuth()
   const threads =
@@ -57,13 +64,42 @@ export function ThreadsList({
         <SidebarMenu>
           {threads.map((thread) => (
             <SidebarMenuItem key={thread._id}>
-              <SidebarMenuButton
-                asChild
-                title={thread.title}
-                isActive={threadId === thread._id}
-              >
+              <SidebarMenuButton asChild isActive={threadId === thread._id}>
                 <Link href={`/threads/${thread._id}`}>
-                  <p className="truncate">{thread.title}</p>
+                  {thread.parentThread && (
+                    <Tooltip>
+                      <TooltipTrigger
+                        onClick={(evt) => {
+                          evt.preventDefault()
+                          evt.stopPropagation()
+                          router.push(`/threads/${thread.parentThread?._id}`)
+                        }}
+                      >
+                        <BranchIcon className="size-4" />
+                      </TooltipTrigger>
+                      <TooltipContent
+                        side="bottom"
+                        sideOffset={10}
+                        className="max-w-[300px]"
+                      >
+                        Branch from: {thread.parentThread?.title}
+                      </TooltipContent>
+                    </Tooltip>
+                  )}
+
+                  <Tooltip delayDuration={1000}>
+                    <TooltipTrigger className="max-w-full overflow-hidden">
+                      <p className="truncate">{thread.title}</p>
+                    </TooltipTrigger>
+                    <TooltipContent
+                      side="bottom"
+                      sideOffset={10}
+                      align="center"
+                      className="max-w-[300px]"
+                    >
+                      {thread.title}
+                    </TooltipContent>
+                  </Tooltip>
                 </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>

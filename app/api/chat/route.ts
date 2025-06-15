@@ -1,11 +1,13 @@
 import { z, ZodError } from "zod/v4"
-import { streamText } from "ai"
-import { google } from "@ai-sdk/google"
+import { streamText, type ToolSet } from "ai"
 import { ConvexError } from "convex/values"
 import { auth } from "@clerk/nextjs/server"
 
 import { convex } from "@/lib/convex"
 import { api } from "@/convex/_generated/api"
+import { getModelById } from "@/lib/models"
+import { getModelProvider } from "@/lib/model-providers"
+import { webSearch } from "@/lib/search-tool"
 import { type Id } from "@/convex/_generated/dataModel"
 
 export async function POST(req: Request) {
@@ -17,21 +19,47 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json()
-    const input = z
-      .object({ threadId: z.string(), prompt: z.string().min(1) })
+    const { prompt, search, ...input } = z
+      .object({
+        threadId: z.string(),
+        prompt: z.string().min(1),
+        search: z.boolean().default(false)
+      })
       .parse(body)
 
-    const prompt = input.prompt
     const threadId = input.threadId as Id<"threads">
+
+    const thread = await convex.query(api.threads.getById, {
+      threadId,
+      userId
+    })
+
+    const modelConfig = getModelById(thread.modelId)
+    const modelProvider = getModelProvider(modelConfig)
+
+    await convex.mutation(api.messages.createAssistantAndUserMessages, {
+      threadId,
+      userId,
+      prompt,
+      model: {
+        search,
+        name: modelConfig.id,
+        temperature: modelConfig.temperature
+      }
+    })
 
     const messages = await convex.query(api.messages.getServerMessages, {
       threadId,
       userId
     })
 
-    const lastMessage = messages.pop()
+    const lastMessage = messages.at(-1)
 
-    if (!lastMessage || lastMessage.role !== "assistant") {
+    if (
+      !lastMessage ||
+      lastMessage.role !== "assistant" ||
+      lastMessage.content !== ""
+    ) {
       return new Response("No assistant message found", { status: 404 })
     }
 
@@ -56,30 +84,38 @@ export async function POST(req: Request) {
       parts: [{ type: "text", text: prompt }]
     })
 
+    const tools: ToolSet = {}
+
+    if (search) {
+      tools.webSearch = webSearch
+    }
+
     const result = streamText({
-      model: google("gemini-2.0-flash-lite"),
+      model: modelProvider,
       system: "You are a helpful assistant.",
       messages: formattedMessages,
+      maxTokens: modelConfig.maxTokens,
+      temperature: modelConfig.temperature,
+      maxSteps: search ? 2 : 1,
+      tools,
       onError: async ({ error }) => {
         console.log("[LLM_STREAM_ERROR]", error)
+        const message =
+          "An error occurred while processing your request. Please try again."
         await convex.mutation(api.messages.updateAssistantMessage, {
           _id: lastMessage._id,
           status: "error",
-          error:
-            "An error occurred while processing your request. Please try again."
+          content: message,
+          error: message
         })
       },
       onFinish: async ({ text, reasoning }) => {
-        // TODO: handle finish reasons, dynaic status, model, search, topK, topP & search
+        // TODO: handle finish reasons, dynamic status, model, search, topK, topP & search
         await convex.mutation(api.messages.updateAssistantMessage, {
           _id: lastMessage._id,
           content: text,
           status: "completed",
-          reasoning,
-          model: {
-            model: "gemini-2.0-flash-lite",
-            search: false
-          }
+          reasoning
         })
       }
     })

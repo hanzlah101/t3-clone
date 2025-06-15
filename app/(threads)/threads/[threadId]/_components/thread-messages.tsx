@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo } from "react"
+import { useMemo } from "react"
 import { useQuery } from "convex/react"
 import { useParams } from "next/navigation"
 import { useChat } from "@ai-sdk/react"
@@ -8,21 +8,14 @@ import { useChat } from "@ai-sdk/react"
 import { api } from "@/convex/_generated/api"
 import { MessageBubble } from "./message-bubble"
 import { TextShimmer } from "@/components/ui/text-shimmer"
-import { formatMessages } from "@/lib/utils"
+import { ScrollWrapper } from "./scroll-wrapper"
 import { type Id } from "@/convex/_generated/dataModel"
 
 export function ThreadMessages() {
   const { threadId }: { threadId: Id<"threads"> } = useParams()
   const queryRes = useQuery(api.messages.list, { threadId })
 
-  const formattedQueryRes = useMemo(() => {
-    return formatMessages(queryRes)
-  }, [queryRes])
-
-  const { messages, setMessages, status } = useChat({
-    id: threadId,
-    initialMessages: formattedQueryRes
-  })
+  const { messages, status } = useChat({ id: threadId })
 
   const mergedMessages = useMemo(() => {
     return messages.map((msg) => {
@@ -32,34 +25,32 @@ export function ThreadMessages() {
     })
   }, [messages, queryRes])
 
-  useEffect(() => {
-    setMessages(formattedQueryRes)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [formattedQueryRes])
-
-  if (!mergedMessages.length && queryRes === undefined) {
+  const isSearching = useMemo(() => {
+    const lastMessage = messages.at(-1)
     return (
-      <div className="relative h-0 overflow-visible">
-        <TextShimmer className="pointer-events-none absolute top-0 left-0">
-          Loading...
-        </TextShimmer>
-      </div>
+      lastMessage?.role === "assistant" &&
+      lastMessage?.parts.some(
+        (part) =>
+          part.type === "tool-invocation" &&
+          part.toolInvocation.toolName === "webSearch" &&
+          part.toolInvocation.state !== "result"
+      )
     )
-  }
+  }, [messages])
 
   return (
-    <>
+    <ScrollWrapper>
       {mergedMessages.map((msg) => (
         <MessageBubble key={msg.id} {...msg} />
       ))}
 
-      {status === "submitted" && (
+      {(isSearching || status === "submitted") && (
         <div className="relative h-0 overflow-visible">
           <TextShimmer className="pointer-events-none absolute top-0 left-0">
-            Thinking...
+            {isSearching ? "Searching the web..." : "Thinking..."}
           </TextShimmer>
         </div>
       )}
-    </>
+    </ScrollWrapper>
   )
 }

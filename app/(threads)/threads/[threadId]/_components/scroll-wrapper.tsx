@@ -32,12 +32,12 @@ export function ScrollWrapper({ children }: { children: React.ReactNode }) {
   return (
     <StickToBottom
       initial="instant"
-      resize="instant"
+      resize="smooth"
       className="relative h-full"
     >
       <StickToBottom.Content
         style={{ paddingBottom: `${formHeight + 32}px` }}
-        className="mx-auto flex max-w-4xl flex-col gap-4 px-8 pt-8"
+        className="mx-auto flex max-w-4xl flex-col space-y-4 px-8 pt-8"
       >
         {children}
       </StickToBottom.Content>
