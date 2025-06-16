@@ -4,7 +4,8 @@ import { useMemo, useState } from "react"
 import { useParams } from "next/navigation"
 import { useMutation, useQuery } from "convex/react"
 import { useAuth } from "@clerk/nextjs"
-import { useLocalStorage, useIsClient, useMediaQuery } from "usehooks-ts"
+import { useMediaQuery } from "@/hooks/use-media-query"
+import { useCookieState } from "@/hooks/use-cookie-storage"
 import {
   ChevronDownIcon,
   FileTextIcon,
@@ -16,7 +17,6 @@ import {
 
 import { api } from "@/convex/_generated/api"
 import { Button } from "@/components/ui/button"
-import { Skeleton } from "@/components/ui/skeleton"
 import { Drawer, DrawerContent, DrawerTrigger } from "@/components/ui/drawer"
 import { type Id } from "@/convex/_generated/dataModel"
 import {
@@ -25,7 +25,6 @@ import {
   PopoverTrigger
 } from "@/components/ui/popover"
 import {
-  DEFAULT_MODEL,
   getModelById,
   MODELS_BY_PROVIDER,
   PROVIDER_CONFIGS,
@@ -46,22 +45,32 @@ import {
 } from "@/components/ui/tooltip"
 
 export function ModelsSelect({
-  textAreaRef
+  textAreaRef,
+  initialState
 }: {
   textAreaRef: React.RefObject<HTMLTextAreaElement | null>
+  initialState: ModelId
 }) {
-  const isClient = useIsClient()
   const isDesktop = useMediaQuery("(min-width: 768px)")
   const [isOpen, setIsOpen] = useState(false)
   const { threadId }: { threadId?: Id<"threads"> } = useParams()
 
-  const [localModelId] = useLocalStorage<ModelId>("modelId", DEFAULT_MODEL)
+  const [localModelId, setLocalModelId] = useCookieState<ModelId>(
+    "model_id",
+    initialState
+  )
 
   const { isSignedIn } = useAuth()
   const modelId = useQuery(
     api.threads.getThreadModel,
     isSignedIn ? { threadId } : "skip"
   )
+
+  const updateModel = useMutation(
+    api.threads.updateThreadModel
+  ).withOptimisticUpdate((store, { modelId }) => {
+    store.setQuery(api.threads.getThreadModel, { threadId }, modelId as ModelId)
+  })
 
   const model = useMemo(() => {
     return getModelById(modelId ?? localModelId)
@@ -72,8 +81,10 @@ export function ModelsSelect({
     if (!open) setTimeout(() => textAreaRef.current?.focus(), 0)
   }
 
-  if (threadId ? modelId === undefined : !isClient) {
-    return <Skeleton className="h-7 w-32" />
+  function handleSelect(modelId: ModelId) {
+    setLocalModelId(modelId)
+    if (threadId) updateModel({ threadId, modelId })
+    handleOpenChange(false)
   }
 
   const trigger = (
@@ -96,7 +107,7 @@ export function ModelsSelect({
           className="bg-popover/60 w-auto p-0 backdrop-blur-md"
           onCloseAutoFocus={(evt) => evt.preventDefault()}
         >
-          <ModelsSelectContent onClose={() => handleOpenChange(false)} />
+          <ModelsSelectContent onSelect={handleSelect} />
         </PopoverContent>
       </Popover>
     )
@@ -106,29 +117,17 @@ export function ModelsSelect({
     <Drawer open={isOpen} onOpenChange={handleOpenChange}>
       <DrawerTrigger asChild>{trigger}</DrawerTrigger>
       <DrawerContent>
-        <ModelsSelectContent onClose={() => handleOpenChange(false)} />
+        <ModelsSelectContent onSelect={handleSelect} />
       </DrawerContent>
     </Drawer>
   )
 }
 
-function ModelsSelectContent({ onClose }: { onClose: () => void }) {
-  const [, setLocalModelId] = useLocalStorage<ModelId>("modelId", DEFAULT_MODEL)
-
-  const { threadId }: { threadId?: Id<"threads"> } = useParams()
-
-  const updateModel = useMutation(
-    api.threads.updateThreadModel
-  ).withOptimisticUpdate((store, { modelId }) => {
-    store.setQuery(api.threads.getThreadModel, { threadId }, modelId as ModelId)
-  })
-
-  function handleSelect(modelId: ModelId) {
-    setLocalModelId(modelId)
-    if (threadId) updateModel({ threadId, modelId })
-    onClose()
-  }
-
+function ModelsSelectContent({
+  onSelect
+}: {
+  onSelect: (modelId: ModelId) => void
+}) {
   return (
     <Command className="text-foreground bg-transparent">
       <CommandInput
@@ -152,7 +151,7 @@ function ModelsSelectContent({ onClose }: { onClose: () => void }) {
                 <CommandItem
                   key={model.id}
                   className="justify-between gap-20 px-4 py-3"
-                  onSelect={() => handleSelect(model.id)}
+                  onSelect={() => onSelect(model.id)}
                   keywords={[
                     model.name,
                     name,

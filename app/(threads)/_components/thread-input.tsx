@@ -1,22 +1,26 @@
 "use client"
 
 import * as React from "react"
+import Cookies from "js-cookie"
 import { toast } from "sonner"
 import { useParams, usePathname, useRouter } from "next/navigation"
 import { useMutation } from "convex/react"
 import { useChat } from "@ai-sdk/react"
 import { ArrowUpIcon, GlobeIcon, SquareIcon } from "lucide-react"
-import { useLocalStorage, useReadLocalStorage } from "usehooks-ts"
 import TextareaAutosize from "react-textarea-autosize"
 
 import { api } from "@/convex/_generated/api"
 import { parseError } from "@/lib/error"
 import { Button } from "@/components/ui/button"
 import { ModelsSelect } from "./models-select"
-import { DEFAULT_MODEL } from "@/lib/models"
+import { DEFAULT_MODEL, getModelById, type ModelId } from "@/lib/models"
 import { type Id } from "@/convex/_generated/dataModel"
+import { useCookieState } from "@/hooks/use-cookie-storage"
 
-export function ThreadInput() {
+export function ThreadInput(initialState: {
+  modelId: ModelId
+  hasSearch: boolean
+}) {
   const router = useRouter()
   const pathname = usePathname()
   const { threadId }: { threadId: Id<"threads"> } = useParams()
@@ -29,9 +33,6 @@ export function ThreadInput() {
     api.messages.createAssistantAndUserMessages
   )
 
-  const search = useReadLocalStorage<boolean>("search") ?? false
-  const modelId = useReadLocalStorage<string>("modelId") ?? DEFAULT_MODEL
-
   const { status, input, setInput, handleInputChange, handleSubmit, stop } =
     useChat({
       id: threadId,
@@ -43,10 +44,18 @@ export function ThreadInput() {
 
   const [isPending, setIsPending] = React.useState(false)
 
+  function getModelId() {
+    return getModelById(Cookies.get("model_id") ?? DEFAULT_MODEL).id
+  }
+
+  function hasSearch() {
+    return JSON.parse(Cookies.get("search") ?? "false") ?? false
+  }
+
   async function handleCreateMessages() {
     try {
       setIsPending(true)
-      await createMessages({ threadId, prompt: input, search })
+      await createMessages({ threadId, prompt: input, search: hasSearch() })
     } catch (error) {
       toast.error(parseError(error, "Failed to create message"))
     } finally {
@@ -76,7 +85,12 @@ export function ThreadInput() {
       setIsPending(true)
       const currentInput = input.trim()
 
-      const newThreadId = await createThread({ prompt: input, modelId, search })
+      const newThreadId = await createThread({
+        prompt: input,
+        modelId: getModelId(),
+        search: hasSearch()
+      })
+
       router.push(`/threads/${newThreadId}`)
 
       pendingSubmitRef.current = currentInput
@@ -139,8 +153,14 @@ export function ThreadInput() {
             }}
           >
             <div className="flex items-center gap-2">
-              <ModelsSelect textAreaRef={textareaRef} />
-              <SearchToggle textareaRef={textareaRef} />
+              <ModelsSelect
+                textAreaRef={textareaRef}
+                initialState={initialState.modelId}
+              />
+              <SearchToggle
+                textareaRef={textareaRef}
+                initialState={initialState.hasSearch}
+              />
             </div>
 
             {status === "submitted" || status === "streaming" ? (
@@ -172,11 +192,13 @@ export function ThreadInput() {
 }
 
 function SearchToggle({
-  textareaRef
+  textareaRef,
+  initialState
 }: {
   textareaRef: React.RefObject<HTMLTextAreaElement | null>
+  initialState: boolean
 }) {
-  const [search, setSearch] = useLocalStorage("search", false)
+  const [search, setSearch] = useCookieState("search", initialState)
   return (
     <Button
       type="button"
@@ -184,7 +206,7 @@ function SearchToggle({
       variant={search === true ? "default" : "ghost"}
       className="h-fit gap-1 rounded-full px-2.5 py-1.5 text-sm"
       onClick={() => {
-        setSearch(search === true ? false : true)
+        setSearch(!search)
         textareaRef.current?.focus()
       }}
     >
