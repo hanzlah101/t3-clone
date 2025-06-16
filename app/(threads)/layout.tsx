@@ -1,4 +1,5 @@
 import Link from "next/link"
+import { cookies } from "next/headers"
 import { Suspense } from "react"
 import { fetchQuery } from "convex/nextjs"
 
@@ -24,6 +25,7 @@ import {
 
 import { ThreadInput } from "./_components/thread-input"
 import { ThreadsList } from "./_components/threads-list"
+import { DEFAULT_MODEL, getModelById } from "@/lib/models"
 
 function ThreadsLoading() {
   return (
@@ -42,11 +44,19 @@ function ThreadsLoading() {
   )
 }
 
-export default function ThreadsLayout({
+export default async function ThreadsLayout({
   children
 }: {
   children: React.ReactNode
 }) {
+  const cookieStore = await cookies()
+  const modelId = getModelById(
+    JSON.parse(cookieStore.get("model_id")?.value ?? DEFAULT_MODEL)
+  ).id
+
+  const hasSearch =
+    JSON.parse(cookieStore.get("search")?.value ?? "false") ?? false
+
   return (
     <SidebarProvider>
       <Sidebar>
@@ -77,7 +87,7 @@ export default function ThreadsLayout({
 
       <SidebarInset className="max-h-svh overflow-hidden">
         <div className="h-full flex-1">{children}</div>
-        <ThreadInput />
+        <ThreadInput modelId={modelId} hasSearch={hasSearch} />
       </SidebarInset>
     </SidebarProvider>
   )

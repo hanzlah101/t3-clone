@@ -33,7 +33,9 @@ export function ThreadMessages() {
         (part) =>
           part.type === "tool-invocation" &&
           part.toolInvocation.toolName === "webSearch" &&
-          part.toolInvocation.state !== "result"
+          (part.toolInvocation.state !== "result" ||
+            (part.toolInvocation.state === "result" &&
+              lastMessage.content.trim() === ""))
       )
     )
   }, [messages])

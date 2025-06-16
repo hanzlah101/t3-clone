@@ -7,6 +7,7 @@ export const env = createEnv({
     CLERK_SECRET_KEY: z.string(),
     GOOGLE_GENERATIVE_AI_API_KEY: z.string(),
     DEEPSEEK_API_KEY: z.string(),
+    OPENAI_API_KEY: z.string(),
     ANTHROPIC_API_KEY: z.string(),
     EXA_API_KEY: z.string()
   },
@@ -23,6 +24,7 @@ export const env = createEnv({
     CLERK_SECRET_KEY: process.env.CLERK_SECRET_KEY,
     GOOGLE_GENERATIVE_AI_API_KEY: process.env.GOOGLE_GENERATIVE_AI_API_KEY,
     DEEPSEEK_API_KEY: process.env.DEEPSEEK_API_KEY,
+    OPENAI_API_KEY: process.env.OPENAI_API_KEY,
     ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY,
     EXA_API_KEY: process.env.EXA_API_KEY,
 

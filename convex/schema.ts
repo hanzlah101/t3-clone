@@ -39,6 +39,7 @@ export default defineSchema({
     role: messageRole,
     status: messageStatus,
     error: v.optional(v.string()),
+    streamId: v.optional(v.string()),
     updatedAt: v.optional(v.number()),
     model: v.optional(messageModelSchema)
   })

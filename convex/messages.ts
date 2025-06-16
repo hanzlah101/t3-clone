@@ -1,5 +1,6 @@
 import { ConvexError, v } from "convex/values"
 
+import { getModelById } from "@/lib/models"
 import { mutation, query } from "./_generated/server"
 import { messageModelSchema, messageRole, messageStatus } from "./schema"
 
@@ -56,14 +57,28 @@ export const createAssistantAndUserMessages = mutation({
   args: {
     threadId: v.id("threads"),
     prompt: v.string(),
-    userId: v.string(),
-    model: messageModelSchema
+    search: v.boolean()
   },
   handler: async (ctx, args) => {
+    const user = await ctx.auth.getUserIdentity()
+    if (!user) throw new ConvexError("Unauthorized")
+
+    const thread = await ctx.db
+      .query("threads")
+      .withIndex("by_user_id", (q) => q.eq("userId", user.subject))
+      .filter((q) => q.eq(q.field("_id"), args.threadId))
+      .unique()
+
+    if (!thread) {
+      throw new ConvexError("Thread not found")
+    }
+
+    const model = getModelById(thread.modelId)
+
     await ctx.db.insert("messages", {
       threadId: args.threadId,
       content: args.prompt,
-      userId: args.userId,
+      userId: user.subject,
       role: "user",
       status: "completed"
     })
@@ -71,10 +86,15 @@ export const createAssistantAndUserMessages = mutation({
     await ctx.db.insert("messages", {
       threadId: args.threadId,
       content: "",
-      userId: args.userId,
+      userId: user.subject,
       role: "assistant",
       status: "waiting",
-      model: args.model
+      streamId: crypto.randomUUID(),
+      model: {
+        name: model.id,
+        temperature: model.temperature,
+        search: args.search
+      }
     })
 
     await ctx.db.patch(args.threadId, { lastMessageAt: Date.now() })
@@ -92,5 +112,21 @@ export const updateAssistantMessage = mutation({
   },
   handler: async (ctx, args) => {
     await ctx.db.patch(args._id, args)
+  }
+})
+
+export const getLastMessage = query({
+  args: {
+    threadId: v.id("threads"),
+    userId: v.string()
+  },
+  handler: async (ctx, { threadId, userId }) => {
+    return await ctx.db
+      .query("messages")
+      .withIndex("by_thread_and_user_id", (q) =>
+        q.eq("userId", userId).eq("threadId", threadId)
+      )
+      .order("desc")
+      .first()
   }
 })

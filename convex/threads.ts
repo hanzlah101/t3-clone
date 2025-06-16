@@ -36,9 +36,10 @@ export const list = query({
 export const create = mutation({
   args: {
     prompt: v.string(),
-    modelId: v.string()
+    modelId: v.string(),
+    search: v.boolean()
   },
-  handler: async (ctx, { prompt, modelId }) => {
+  handler: async (ctx, { prompt, modelId, search }) => {
     if (!isModelValid(modelId)) throw new ConvexError("Invalid model")
     const identity = await ctx.auth.getUserIdentity()
     if (!identity) throw new ConvexError("Unauthorized")
@@ -48,6 +49,12 @@ export const create = mutation({
       modelId,
       title: "New Thread",
       lastMessageAt: Date.now()
+    })
+
+    await ctx.runMutation(api.messages.createAssistantAndUserMessages, {
+      threadId,
+      prompt,
+      search
     })
 
     await ctx.scheduler.runAfter(0, api.threads.generateTitle, {
