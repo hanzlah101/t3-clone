@@ -86,7 +86,7 @@ function MessageBubbleComp({
           )}
 
           {dbMessage?.role === "assistant" && dbMessage?.model && (
-            <span className="text-[13px]">
+            <span className="text-muted-foreground text-[13px]">
               {getModelName(dbMessage?.model?.name)}
             </span>
           )}

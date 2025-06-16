@@ -25,8 +25,11 @@ export function ThreadInput() {
   const pendingSubmitRef = React.useRef<string | null>(null)
 
   const createThread = useMutation(api.threads.create)
+  const createMessages = useMutation(
+    api.messages.createAssistantAndUserMessages
+  )
 
-  const search = useReadLocalStorage("search") ?? false
+  const search = useReadLocalStorage<boolean>("search") ?? false
   const modelId = useReadLocalStorage<string>("modelId") ?? DEFAULT_MODEL
 
   const { status, input, setInput, handleInputChange, handleSubmit, stop } =
@@ -34,11 +37,22 @@ export function ThreadInput() {
       id: threadId,
       experimental_prepareRequestBody: ({ requestData }) => {
         const id = (requestData as { id?: Id<"threads"> })?.id ?? threadId
-        return { threadId: id, prompt: input, search }
+        return { threadId: id, prompt: input }
       }
     })
 
   const [isPending, setIsPending] = React.useState(false)
+
+  async function handleCreateMessages() {
+    try {
+      setIsPending(true)
+      await createMessages({ threadId, prompt: input, search })
+    } catch (error) {
+      toast.error(parseError(error, "Failed to create message"))
+    } finally {
+      setIsPending(false)
+    }
+  }
 
   async function handleCreateThread() {
     if (
@@ -52,8 +66,9 @@ export function ThreadInput() {
     }
 
     if (threadId) {
+      await handleCreateMessages()
       handleSubmit()
-      textareaRef.current?.focus()
+      setTimeout(() => textareaRef.current?.focus(), 0)
       return
     }
 
@@ -61,7 +76,7 @@ export function ThreadInput() {
       setIsPending(true)
       const currentInput = input.trim()
 
-      const newThreadId = await createThread({ prompt: input, modelId })
+      const newThreadId = await createThread({ prompt: input, modelId, search })
       router.push(`/threads/${newThreadId}`)
 
       pendingSubmitRef.current = currentInput
@@ -166,7 +181,7 @@ function SearchToggle({
     <Button
       type="button"
       size="sm"
-      variant={search ? "default" : "ghost"}
+      variant={search === true ? "default" : "ghost"}
       className="h-fit gap-1 rounded-full px-2.5 py-1.5 text-sm"
       onClick={() => {
         setSearch(search === true ? false : true)

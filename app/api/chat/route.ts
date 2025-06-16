@@ -19,12 +19,8 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json()
-    const { prompt, search, ...input } = z
-      .object({
-        threadId: z.string(),
-        prompt: z.string().min(1),
-        search: z.boolean().default(false)
-      })
+    const { prompt, ...input } = z
+      .object({ threadId: z.string(), prompt: z.string().min(1) })
       .parse(body)
 
     const threadId = input.threadId as Id<"threads">
@@ -36,17 +32,6 @@ export async function POST(req: Request) {
 
     const modelConfig = getModelById(thread.modelId)
     const modelProvider = getModelProvider(modelConfig)
-
-    await convex.mutation(api.messages.createAssistantAndUserMessages, {
-      threadId,
-      userId,
-      prompt,
-      model: {
-        search,
-        name: modelConfig.id,
-        temperature: modelConfig.temperature
-      }
-    })
 
     const messages = await convex.query(api.messages.getServerMessages, {
       threadId,
@@ -62,6 +47,8 @@ export async function POST(req: Request) {
     ) {
       return new Response("No assistant message found", { status: 404 })
     }
+
+    const search = lastMessage.model?.search ?? false
 
     const formattedMessages = messages
       .map((msg) => ({

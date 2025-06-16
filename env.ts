@@ -8,7 +8,8 @@ export const env = createEnv({
     GOOGLE_GENERATIVE_AI_API_KEY: z.string(),
     DEEPSEEK_API_KEY: z.string(),
     ANTHROPIC_API_KEY: z.string(),
-    EXA_API_KEY: z.string()
+    EXA_API_KEY: z.string(),
+    REDIS_URL: z.string()
   },
   client: {
     NEXT_PUBLIC_CONVEX_URL: z.url(),
@@ -25,6 +26,7 @@ export const env = createEnv({
     DEEPSEEK_API_KEY: process.env.DEEPSEEK_API_KEY,
     ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY,
     EXA_API_KEY: process.env.EXA_API_KEY,
+    REDIS_URL: process.env.REDIS_URL,
 
     // client env variables
     NEXT_PUBLIC_CONVEX_URL: process.env.NEXT_PUBLIC_CONVEX_URL,
