@@ -19,7 +19,7 @@ export const list = query({
       )
       .collect()
 
-    return messages.filter((msg) => !!msg.content)
+    return messages
   }
 })
 
@@ -89,7 +89,6 @@ export const createAssistantAndUserMessages = mutation({
       userId: user.subject,
       role: "assistant",
       status: "waiting",
-      streamId: crypto.randomUUID(),
       model: {
         name: model.id,
         temperature: model.temperature,

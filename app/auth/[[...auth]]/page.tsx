@@ -1,35 +1,40 @@
 "use client"
 
-import { useTransition } from "react"
+import { useState } from "react"
 import { toast } from "sonner"
 import { redirect } from "next/navigation"
 import { useSignIn, useSession } from "@clerk/nextjs"
 
 import { GoogleIcon } from "@/components/icons/google"
+import { GitHubIcon } from "@/components/icons/github"
 import { Button } from "@/components/ui/button"
 import { Spinner } from "@/components/ui/spinner"
 import { ROUTES } from "@/lib/constants"
 
+type Provider = "oauth_google" | "oauth_github"
+
 export default function Auth() {
-  const [isPending, startTransition] = useTransition()
+  const [pending, setPending] = useState<Provider | null>(null)
   const { signIn, isLoaded } = useSignIn()
   const { isSignedIn } = useSession()
 
-  function googleSignIn() {
+  async function googleSignIn(provider: Provider) {
     if (!isLoaded) return null
-    startTransition(async () => {
-      try {
-        await signIn.authenticateWithRedirect({
-          strategy: "oauth_google",
-          redirectUrl: ROUTES.ssoCb,
-          redirectUrlComplete: ROUTES.afterLogin
-        })
-      } catch {
-        toast.error("Oh no! Something went wrong", {
-          description: "Failed to sign in, please try again"
-        })
-      }
-    })
+
+    try {
+      setPending(provider)
+      await signIn.authenticateWithRedirect({
+        strategy: provider,
+        redirectUrl: ROUTES.ssoCb,
+        redirectUrlComplete: ROUTES.afterLogin
+      })
+    } catch {
+      toast.error("Oh no! Something went wrong", {
+        description: "Failed to sign in, please try again"
+      })
+    } finally {
+      setPending(null)
+    }
   }
 
   if (isSignedIn === true) redirect(ROUTES.afterLogin)
@@ -40,18 +45,29 @@ export default function Auth() {
         Welcome to <span className="text-primary font-bold">T3.Clone</span>
       </h1>
       <h2 className="mt-2 font-medium">
-        Sign in below (we&apos;ll increase your message limits if you do 😉)
+        Just another AI wrapper — like yours, but working 😉
       </h2>
 
       <Button
         size="xl"
         variant="outline"
-        className="mx-auto mt-7 mb-5 w-full max-w-sm"
-        onClick={googleSignIn}
-        disabled={isPending}
+        className="mx-auto mt-7 w-full max-w-sm"
+        onClick={() => googleSignIn("oauth_google")}
+        disabled={!!pending}
       >
-        {isPending ? <Spinner /> : <GoogleIcon />}
+        {pending === "oauth_google" ? <Spinner /> : <GoogleIcon />}
         Continue with Google
+      </Button>
+
+      <Button
+        size="xl"
+        variant="outline"
+        className="mx-auto mt-3 mb-5 w-full max-w-sm"
+        onClick={() => googleSignIn("oauth_github")}
+        disabled={!!pending}
+      >
+        {pending === "oauth_github" ? <Spinner /> : <GitHubIcon />}
+        Continue with Github
       </Button>
 
       <p className="text-muted-foreground text-sm">

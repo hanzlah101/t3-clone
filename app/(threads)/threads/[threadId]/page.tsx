@@ -21,10 +21,7 @@ export default function Thread() {
 
   const { messages, setMessages } = useChat({
     id: threadId,
-    initialMessages: formattedQueryRes,
-    onToolCall: ({ toolCall }) => {
-      console.log("toolCall", toolCall)
-    }
+    initialMessages: formattedQueryRes
   })
 
   useEffect(() => {
@@ -34,7 +31,7 @@ export default function Thread() {
 
   if (!messages.length && queryRes === undefined) {
     return (
-      <div className="mx-auto max-w-4xl p-8">
+      <div className="mx-auto max-w-4xl p-8 pt-16">
         <div className="relative h-0 overflow-visible">
           <TextShimmer className="pointer-events-none absolute top-0 left-0">
             Loading...

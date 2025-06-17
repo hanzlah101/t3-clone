@@ -159,9 +159,16 @@ const components: Options["components"] = {
   ),
   code: function Code({ node: _, className, children, ...props }) {
     const match = /language-(\w+)/.exec(className || "")
-    const language = match ? match[1] : null
+    const langMatch = match ? match[1] : null
+    const code = String(children).replace(/\n$/, "")
 
-    if (!language) {
+    const isTreeStructure =
+      code.includes("├──") ||
+      code.includes("└──") ||
+      code.includes("│") ||
+      (code.includes("/") && code.includes("\n") && code.match(/^[\s├└│─]+/m))
+
+    if (!langMatch && !isTreeStructure) {
       return (
         <code
           className={cn(
@@ -174,11 +181,14 @@ const components: Options["components"] = {
       )
     }
 
+    const language = langMatch || (isTreeStructure ? "text" : "text")
+    const filename = langMatch || (isTreeStructure ? "tree" : "code")
+
     const data: CodeBlockProps["data"] = [
       {
+        code,
         language,
-        filename: language,
-        code: String(children).replace(/\n$/, "")
+        filename
       }
     ]
 

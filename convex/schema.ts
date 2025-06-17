@@ -10,6 +10,7 @@ export const messageRole = v.union(
 export const messageStatus = v.union(
   v.literal("waiting"),
   v.literal("completed"),
+  v.literal("disconnected"),
   v.literal("error"),
   v.literal("cancelled")
 )
@@ -30,7 +31,9 @@ export default defineSchema({
     updatedAt: v.optional(v.number()),
     lastMessageAt: v.number(),
     branchParentThreadId: v.optional(v.id("threads"))
-  }).index("by_user_id", ["userId"]),
+  })
+    .index("by_user_id", ["userId"])
+    .index("by_branch_parent_thread_id", ["branchParentThreadId"]),
   messages: defineTable({
     threadId: v.id("threads"),
     reasoning: v.optional(v.string()),
@@ -39,7 +42,6 @@ export default defineSchema({
     role: messageRole,
     status: messageStatus,
     error: v.optional(v.string()),
-    streamId: v.optional(v.string()),
     updatedAt: v.optional(v.number()),
     model: v.optional(messageModelSchema)
   })

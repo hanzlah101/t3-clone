@@ -1,6 +1,7 @@
 import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
 import { type UIMessage } from "ai"
+import Cookies from "js-cookie"
 
 import { type Doc } from "@/convex/_generated/dataModel"
 
@@ -32,4 +33,25 @@ export function formatMessages(messages?: Doc<"messages">[]): UIMessage[] {
       ]
     })) ?? []
   )
+}
+
+export function parseCookie<T>(cookieValue?: string, defaultValue?: T) {
+  if (cookieValue !== undefined && cookieValue !== null) {
+    try {
+      return JSON.parse(cookieValue)
+    } catch {
+      return cookieValue
+    }
+  }
+
+  return defaultValue
+}
+
+export function getCookie<T>(cookie: string, defaultValue?: T) {
+  const cookieValue = Cookies.get(cookie)
+  return parseCookie(cookieValue, defaultValue)
+}
+
+export function focusThreadInput() {
+  setTimeout(() => document.getElementById("thread-input")?.focus(), 0)
 }

@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button"
 import { Spinner } from "@/components/ui/spinner"
 import { getModelName } from "@/lib/models"
 import { BranchIcon } from "@/components/icons/branch"
+import { DEFAULT_ERROR } from "@/lib/constants"
 import { ReasoningMessagePart, type ReasoningPart } from "./reasoning"
 import type { Id, Doc } from "@/convex/_generated/dataModel"
 import {
@@ -31,19 +32,14 @@ function MessageBubbleComp({
   const { threadId }: { threadId: string } = useParams()
   const { status } = useChat({ id: threadId })
 
-  if (dbMessage?.status === "error") {
-    return (
-      <div className="bg-destructive/15 text-destructive mb-8 rounded-md px-4 py-3 text-[15px]">
-        {dbMessage.error ??
-          "An error occurred while processing your request. Please try again."}
-      </div>
-    )
-  }
-
   if (!content.trim()) return null
 
+  const hasError =
+    dbMessage &&
+    ["error", "disconnected", "cancelled"].includes(dbMessage?.status)
+
   return (
-    <div className="group/message relative space-y-2 pb-8">
+    <div className="group/message space-y-2">
       <div
         className={cn({
           "bg-accent text-accent-foreground ml-auto w-fit max-w-xl rounded-xl px-4 py-2":
@@ -72,11 +68,17 @@ function MessageBubbleComp({
         })}
       </div>
 
+      {hasError && (
+        <div className="bg-destructive/15 text-destructive my-2 rounded-md px-4 py-3 text-[15px]">
+          {dbMessage.error ?? DEFAULT_ERROR}
+        </div>
+      )}
+
       {(dbMessage || role === "user") && (
         <div
           className={cn(
-            "absolute bottom-0 flex w-fit items-center gap-2 opacity-0 transition-opacity group-hover/message:opacity-100",
-            role === "user" ? "right-0" : "left-0"
+            "flex w-fit items-center gap-2 opacity-0 transition-opacity group-hover/message:opacity-100",
+            role === "user" ? "ml-auto" : "mr-auto"
           )}
         >
           <CopyButton text={content} className="size-8" />

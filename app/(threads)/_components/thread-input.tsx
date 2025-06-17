@@ -1,7 +1,6 @@
 "use client"
 
 import * as React from "react"
-import Cookies from "js-cookie"
 import { toast } from "sonner"
 import { useParams, usePathname, useRouter } from "next/navigation"
 import { useMutation } from "convex/react"
@@ -14,8 +13,9 @@ import { parseError } from "@/lib/error"
 import { Button } from "@/components/ui/button"
 import { ModelsSelect } from "./models-select"
 import { DEFAULT_MODEL, getModelById, type ModelId } from "@/lib/models"
+import { useCookieState } from "@/hooks/use-cookie-state"
+import { getCookie } from "@/lib/utils"
 import { type Id } from "@/convex/_generated/dataModel"
-import { useCookieState } from "@/hooks/use-cookie-storage"
 
 export function ThreadInput(initialState: {
   modelId: ModelId
@@ -45,11 +45,11 @@ export function ThreadInput(initialState: {
   const [isPending, setIsPending] = React.useState(false)
 
   function getModelId() {
-    return getModelById(Cookies.get("model_id") ?? DEFAULT_MODEL).id
+    return getModelById(getCookie("model_id", DEFAULT_MODEL)).id
   }
 
   function hasSearch() {
-    return JSON.parse(Cookies.get("search") ?? "false") ?? false
+    return getCookie("search", false)
   }
 
   async function handleCreateMessages() {
@@ -84,7 +84,6 @@ export function ThreadInput(initialState: {
     try {
       setIsPending(true)
       const currentInput = input.trim()
-
       const newThreadId = await createThread({
         prompt: input,
         modelId: getModelId(),

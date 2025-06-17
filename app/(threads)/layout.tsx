@@ -3,9 +3,11 @@ import { cookies } from "next/headers"
 import { Suspense } from "react"
 import { fetchQuery } from "convex/nextjs"
 
+import { parseCookie } from "@/lib/utils"
 import { getAuthToken } from "@/lib/auth"
 import { api } from "@/convex/_generated/api"
 import { Button } from "@/components/ui/button"
+import { DEFAULT_MODEL, getModelById } from "@/lib/models"
 import { ThemeSwitcher } from "@/components/theme-switcher"
 import {
   Sidebar,
@@ -23,9 +25,9 @@ import {
   SidebarTrigger
 } from "@/components/ui/sidebar"
 
+import { Header } from "./_components/header"
 import { ThreadInput } from "./_components/thread-input"
 import { ThreadsList } from "./_components/threads-list"
-import { DEFAULT_MODEL, getModelById } from "@/lib/models"
 
 function ThreadsLoading() {
   return (
@@ -51,14 +53,18 @@ export default async function ThreadsLayout({
 }) {
   const cookieStore = await cookies()
   const modelId = getModelById(
-    JSON.parse(cookieStore.get("model_id")?.value ?? DEFAULT_MODEL)
+    parseCookie(cookieStore.get("model_id")?.value, DEFAULT_MODEL)
   ).id
 
-  const hasSearch =
-    JSON.parse(cookieStore.get("search")?.value ?? "false") ?? false
+  const hasSearch = parseCookie(cookieStore.get("search")?.value, false)
+
+  const sidebarState = parseCookie(
+    cookieStore.get("sidebar_state")?.value,
+    true
+  )
 
   return (
-    <SidebarProvider>
+    <SidebarProvider defaultOpen={sidebarState}>
       <Sidebar>
         <SidebarHeader>
           <div className="flex items-center justify-between">
@@ -82,10 +88,12 @@ export default async function ThreadsLayout({
             <ThreadsListAsync />
           </Suspense>
         </SidebarContent>
+
         <SidebarRail />
       </Sidebar>
 
       <SidebarInset className="max-h-svh overflow-hidden">
+        <Header />
         <div className="h-full flex-1">{children}</div>
         <ThreadInput modelId={modelId} hasSearch={hasSearch} />
       </SidebarInset>
