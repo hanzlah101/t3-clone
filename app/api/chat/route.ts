@@ -8,7 +8,8 @@ import { api } from "@/convex/_generated/api"
 import { getModelById } from "@/lib/models"
 import { getModelProvider } from "@/lib/model-providers"
 import { webSearch } from "@/lib/search-tool"
-import { type Id } from "@/convex/_generated/dataModel"
+import { DEFAULT_ERROR } from "@/lib/constants"
+import type { Doc, Id } from "@/convex/_generated/dataModel"
 
 export async function POST(req: Request) {
   try {
@@ -48,6 +49,8 @@ export async function POST(req: Request) {
       return new Response("No assistant message found", { status: 404 })
     }
 
+    const abortController = new AbortController()
+
     const search = lastMessage.model?.search ?? false
 
     const formattedMessages = messages
@@ -77,34 +80,78 @@ export async function POST(req: Request) {
       tools.webSearch = webSearch
     }
 
+    let content = ""
+    let reasoning = ""
+
     const result = streamText({
       model: modelProvider,
-      system: "You are a helpful assistant.",
+      abortSignal: abortController.signal,
+      system:
+        "You are a helpful assistant." +
+        (search ? " You can use the webSearch tool to search the web." : ""),
       messages: formattedMessages,
       maxTokens: modelConfig.maxTokens,
       temperature: modelConfig.temperature,
       maxSteps: search ? 2 : 1,
       tools,
-      onError: async ({ error }) => {
-        console.log("[LLM_STREAM_ERROR]", error)
-        const message =
-          "An error occurred while processing your request. Please try again."
-        await convex.mutation(api.messages.updateAssistantMessage, {
-          _id: lastMessage._id,
-          status: "error",
-          content: message,
-          error: message
-        })
+      onChunk: async ({ chunk }) => {
+        if (chunk.type === "reasoning") {
+          reasoning += chunk.textDelta
+        }
+
+        if (chunk.type === "text-delta") {
+          content += chunk.textDelta
+        }
       },
       onFinish: async ({ text, reasoning }) => {
-        // TODO: handle finish reasons, dynamic status, model, search, topK, topP & search
         await convex.mutation(api.messages.updateAssistantMessage, {
           _id: lastMessage._id,
           content: text,
           status: "completed",
           reasoning
         })
+      },
+      onError: async ({ error }) => {
+        console.log("[LLM_STREAM_ERROR]", error)
+
+        await convex.mutation(api.messages.updateAssistantMessage, {
+          _id: lastMessage._id,
+          status: "error",
+          reasoning: reasoning ?? undefined,
+          content: content ?? DEFAULT_ERROR,
+          error: DEFAULT_ERROR
+        })
       }
+    })
+
+    req.signal?.addEventListener("abort", async () => {
+      const lastMessage = await convex.query(api.messages.getLastMessage, {
+        threadId,
+        userId
+      })
+
+      if (!lastMessage || lastMessage.role !== "assistant") {
+        abortController.abort()
+        return
+      }
+
+      const data = {
+        _id: lastMessage._id,
+        reasoning: reasoning ?? undefined,
+        content: content ?? "User disconnected",
+        status: "disconnected",
+        error: "User disconnected"
+      } as Doc<"messages">
+
+      if (lastMessage.status === "cancelled") {
+        data.status = "cancelled"
+        data.error = "Stopped by user"
+        data.content = content ?? "Stopped by user"
+      }
+
+      await convex.mutation(api.messages.updateAssistantMessage, data)
+
+      abortController.abort()
     })
 
     return result.toDataStreamResponse()

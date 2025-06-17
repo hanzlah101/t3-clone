@@ -1,5 +1,6 @@
 import * as React from "react"
 import Cookies from "js-cookie"
+import { getCookie } from "@/lib/utils"
 
 export function useCookieState<T>(
   key: string,
@@ -8,13 +9,9 @@ export function useCookieState<T>(
   const [value, setValue] = React.useState<T>(initialValue)
 
   React.useEffect(() => {
-    const cookieValue = Cookies.get(key)
+    const cookieValue = getCookie(key)
     if (cookieValue !== undefined) {
-      try {
-        setValue(JSON.parse(cookieValue))
-      } catch {
-        setValue(cookieValue as unknown as T)
-      }
+      setValue(cookieValue)
     }
   }, [key])
 

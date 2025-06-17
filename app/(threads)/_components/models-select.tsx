@@ -5,7 +5,7 @@ import { useParams } from "next/navigation"
 import { useMutation, useQuery } from "convex/react"
 import { useAuth } from "@clerk/nextjs"
 import { useMediaQuery } from "@/hooks/use-media-query"
-import { useCookieState } from "@/hooks/use-cookie-storage"
+import { useCookieState } from "@/hooks/use-cookie-state"
 import {
   ChevronDownIcon,
   FileTextIcon,
