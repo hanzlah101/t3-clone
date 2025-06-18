@@ -23,19 +23,17 @@ export function ThreadInput(initialState: {
 }) {
   const router = useRouter()
   const pathname = usePathname()
-  const { threadId }: { threadId: Id<"threads"> } = useParams()
+  const { threadId, shareId }: { threadId?: Id<"threads">; shareId?: string } =
+    useParams()
 
   const textareaRef = React.useRef<HTMLTextAreaElement>(null)
   const pendingSubmitRef = React.useRef<string | null>(null)
 
   const createThread = useMutation(api.threads.create)
-  const createMessages = useMutation(
-    api.messages.createAssistantAndUserMessages
-  )
 
   const { status, input, setInput, handleInputChange, handleSubmit, stop } =
     useChat({
-      id: threadId,
+      id: threadId ?? shareId,
       experimental_prepareRequestBody: ({ requestData }) => {
         const id = (requestData as { id?: Id<"threads"> })?.id ?? threadId
         return { threadId: id, prompt: input }
@@ -52,17 +50,6 @@ export function ThreadInput(initialState: {
     return getCookie("search", false)
   }
 
-  async function handleCreateMessages() {
-    try {
-      setIsPending(true)
-      await createMessages({ threadId, prompt: input, search: hasSearch() })
-    } catch (error) {
-      toast.error(parseError(error, "Failed to create message"))
-    } finally {
-      setIsPending(false)
-    }
-  }
-
   async function handleCreateThread() {
     if (
       !input.trim() ||
@@ -74,25 +61,29 @@ export function ThreadInput(initialState: {
       return
     }
 
-    if (threadId) {
-      await handleCreateMessages()
-      handleSubmit()
-      setTimeout(() => textareaRef.current?.focus(), 0)
-      return
-    }
-
     try {
       setIsPending(true)
       const currentInput = input.trim()
-      const newThreadId = await createThread({
+      const res = await createThread({
         prompt: input,
         modelId: getModelId(),
-        search: hasSearch()
+        search: hasSearch(),
+        threadId,
+        shareId
       })
 
-      router.push(`/threads/${newThreadId}`)
-
-      pendingSubmitRef.current = currentInput
+      if (res?.newThreadId) {
+        router.push(`/threads/${res.newThreadId}`)
+        pendingSubmitRef.current = currentInput
+        setTimeout(() => textareaRef.current?.focus(), 0)
+      } else {
+        handleSubmit(
+          undefined,
+          res?.oldThreadId ? { data: { id: res?.oldThreadId } } : undefined
+        )
+        setTimeout(() => textareaRef.current?.focus(), 0)
+        setIsPending(false)
+      }
     } catch (error) {
       toast.error(parseError(error, "Failed to create thread"))
       setIsPending(false)

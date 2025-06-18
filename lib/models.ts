@@ -175,7 +175,7 @@ export const MODELS_BY_PROVIDER = Object.entries(
   )
 ) as [ModelConfig["provider"], ModelConfig[]][]
 
-export function getModelById(modelId: string): ModelConfig {
+export function getModelById(modelId?: string): ModelConfig {
   const model = SUPPORTED_MODELS.find((model) => model.id === modelId)
   if (!model) {
     return SUPPORTED_MODELS.find((model) => model.id === DEFAULT_MODEL)!

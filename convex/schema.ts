@@ -23,6 +23,8 @@ export const messageModelSchema = v.optional(
   })
 )
 
+export const shareAccess = v.union(v.literal("editable"), v.literal("readonly"))
+
 export default defineSchema({
   threads: defineTable({
     title: v.string(),
@@ -30,10 +32,13 @@ export default defineSchema({
     modelId: v.string(),
     updatedAt: v.optional(v.number()),
     lastMessageAt: v.number(),
-    branchParentThreadId: v.optional(v.id("threads"))
+    branchParentThreadId: v.optional(v.id("threads")),
+    sharedThreadId: v.optional(v.string()),
+    shareAccess: v.optional(shareAccess)
   })
     .index("by_user_id", ["userId"])
-    .index("by_branch_parent_thread_id", ["branchParentThreadId"]),
+    .index("by_branch_parent_thread_id", ["branchParentThreadId"])
+    .index("by_shared_thread_id", ["sharedThreadId"]),
   messages: defineTable({
     threadId: v.id("threads"),
     reasoning: v.optional(v.string()),
@@ -44,8 +49,5 @@ export default defineSchema({
     error: v.optional(v.string()),
     updatedAt: v.optional(v.number()),
     model: v.optional(messageModelSchema)
-  })
-    .index("by_thread_id", ["threadId"])
-    .index("by_user_id", ["userId"])
-    .index("by_thread_and_user_id", ["userId", "threadId"])
+  }).index("by_thread_id", ["threadId"])
 })

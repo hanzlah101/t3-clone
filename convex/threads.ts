@@ -5,7 +5,14 @@ import { google } from "@ai-sdk/google"
 import { api, internal } from "./_generated/api"
 import { getModelById, isModelValid } from "@/lib/models"
 
-import { action, internalMutation, mutation, query } from "./_generated/server"
+import { shareAccess } from "./schema"
+import { type Doc } from "./_generated/dataModel"
+import {
+  internalAction,
+  internalMutation,
+  mutation,
+  query
+} from "./_generated/server"
 
 export const list = query({
   handler: async (ctx) => {
@@ -23,6 +30,9 @@ export const list = query({
 
         if (thread.branchParentThreadId) {
           parentThread = await ctx.db.get(thread.branchParentThreadId)
+          if (parentThread?.userId !== identity.subject) {
+            parentThread = null
+          }
         }
 
         return { ...thread, parentThread }
@@ -35,38 +45,110 @@ export const list = query({
 
 export const create = mutation({
   args: {
+    threadId: v.optional(v.id("threads")),
+    shareId: v.optional(v.string()),
+    modelId: v.optional(v.string()),
     prompt: v.string(),
-    modelId: v.string(),
     search: v.boolean()
   },
-  handler: async (ctx, { prompt, modelId, search }) => {
-    if (!isModelValid(modelId)) throw new ConvexError("Invalid model")
-    const identity = await ctx.auth.getUserIdentity()
-    if (!identity) throw new ConvexError("Unauthorized")
-    const userId = identity.subject
-    const threadId = await ctx.db.insert("threads", {
-      userId,
-      modelId,
+  handler: async (ctx, args) => {
+    const user = await ctx.auth.getUserIdentity()
+    if (!user) throw new ConvexError("Unauthorized")
+
+    if (args.threadId) {
+      const thread = await ctx.runQuery(api.threads.getByUserId, {
+        threadId: args.threadId,
+        userId: user.subject
+      })
+
+      await ctx.runMutation(internal.messages.initMessages, {
+        threadId: args.threadId,
+        prompt: args.prompt,
+        search: args.search,
+        userId: user.subject,
+        modelId: thread.modelId
+      })
+
+      return null
+    }
+
+    if (args.shareId) {
+      const thread = await ctx.db
+        .query("threads")
+        .withIndex("by_shared_thread_id", (q) =>
+          q.eq("sharedThreadId", args.shareId)
+        )
+        .unique()
+
+      if (!thread) throw new ConvexError("Thread not found")
+
+      if (thread.shareAccess === "editable") {
+        await ctx.runMutation(internal.messages.initMessages, {
+          threadId: thread._id,
+          prompt: args.prompt,
+          search: args.search,
+          userId: user.subject,
+          modelId: thread.modelId
+        })
+
+        return { oldThreadId: thread._id }
+      }
+
+      const messages = await ctx.db
+        .query("messages")
+        .withIndex("by_thread_id", (q) => q.eq("threadId", thread._id))
+        .collect()
+
+      const newThreadId = await ctx.db.insert("threads", {
+        title: thread.title,
+        userId: user.subject,
+        lastMessageAt: Date.now(),
+        modelId: thread.modelId
+      })
+
+      for (const { _id, _creationTime, ...oldMessage } of messages) {
+        await ctx.db.insert("messages", {
+          ...oldMessage,
+          threadId: newThreadId
+        })
+      }
+
+      await ctx.runMutation(internal.messages.initMessages, {
+        threadId: newThreadId,
+        prompt: args.prompt,
+        search: args.search,
+        userId: user.subject,
+        modelId: thread.modelId
+      })
+
+      return { newThreadId }
+    }
+
+    const newThreadId = await ctx.db.insert("threads", {
       title: "New Thread",
-      lastMessageAt: Date.now()
+      userId: user.subject,
+      lastMessageAt: Date.now(),
+      modelId: getModelById(args.modelId).id
     })
 
-    await ctx.runMutation(api.messages.createAssistantAndUserMessages, {
-      threadId,
-      prompt,
-      search
+    await ctx.runMutation(internal.messages.initMessages, {
+      threadId: newThreadId,
+      prompt: args.prompt,
+      search: args.search,
+      userId: user.subject,
+      modelId: getModelById(args.modelId).id
     })
 
-    await ctx.scheduler.runAfter(0, api.threads.generateTitle, {
-      prompt,
-      threadId
+    await ctx.scheduler.runAfter(0, internal.threads.generateTitle, {
+      threadId: newThreadId,
+      prompt: args.prompt
     })
 
-    return threadId
+    return { newThreadId }
   }
 })
 
-export const updateTitle = mutation({
+export const update = mutation({
   args: {
     threadId: v.id("threads"),
     title: v.string()
@@ -75,77 +157,38 @@ export const updateTitle = mutation({
     const identity = await ctx.auth.getUserIdentity()
     if (!identity) throw new ConvexError("Unauthorized")
 
-    const thread = await ctx.db
-      .query("threads")
-      .withIndex("by_user_id", (q) => q.eq("userId", identity.subject))
-      .filter((q) => q.eq(q.field("_id"), args.threadId))
-      .unique()
-
-    if (!thread) throw new ConvexError("Thread not found")
+    const thread = await ctx.runQuery(api.threads.getByUserId, {
+      threadId: args.threadId,
+      userId: identity.subject
+    })
 
     await ctx.runMutation(internal.threads.updateInternalTitle, {
-      threadId: args.threadId,
+      threadId: thread._id,
       title: args.title
     })
   }
 })
 
-export const updateInternalTitle = internalMutation({
+export const get = query({
   args: {
-    threadId: v.id("threads"),
-    title: v.string()
+    threadId: v.id("threads")
   },
-  handler: async (ctx, args) => {
-    await ctx.db.patch(args.threadId, {
-      title: args.title,
-      updatedAt: Date.now()
-    })
-  }
-})
-
-export const generateTitle = action({
-  args: {
-    threadId: v.id("threads"),
-    prompt: v.string()
-  },
-  handler: async (ctx, { prompt, threadId }) => {
+  handler: async (ctx, { threadId }) => {
+    const identity = await ctx.auth.getUserIdentity()
+    if (!identity) throw new ConvexError("Unauthorized")
     try {
-      const { text } =
-        process.env.NODE_ENV === "production"
-          ? await generateText({
-              model: google("gemini-2.0-flash-lite"),
-              prompt: `Generate a straight forward title for this conversation: ${prompt}`,
-              system:
-                "Create short, descriptive titles for chat conversations. Focus on the main topic or question. Maximum 15 words. No quotes, emojis, or extra formatting. Just the title.",
-              maxTokens: 25,
-              temperature: 0.2
-            })
-          : { text: prompt }
+      const thread: Doc<"threads"> = await ctx.runQuery(
+        api.threads.getByUserId,
+        {
+          threadId,
+          userId: identity.subject
+        }
+      )
 
-      await ctx.runMutation(internal.threads.updateInternalTitle, {
-        threadId,
-        title: text
-      })
-    } catch (error) {
-      console.error("Error generating thread title", threadId, error)
+      return thread
+    } catch {
+      return null
     }
-  }
-})
-
-export const getById = query({
-  args: {
-    threadId: v.id("threads"),
-    userId: v.string()
-  },
-  handler: async (ctx, { threadId, userId }) => {
-    const thread = await ctx.db
-      .query("threads")
-      .withIndex("by_user_id", (q) => q.eq("userId", userId))
-      .filter((q) => q.eq(q.field("_id"), threadId))
-      .unique()
-
-    if (!thread) throw new ConvexError("No thread found")
-    return thread
   }
 })
 
@@ -157,18 +200,17 @@ export const branchOff = mutation({
     const user = await ctx.auth.getUserIdentity()
     if (!user) throw new ConvexError("Unauthorized")
 
-    const message = await ctx.db
-      .query("messages")
-      .withIndex("by_user_id", (q) => q.eq("userId", user.subject))
-      .filter((q) => q.eq(q.field("_id"), messageId))
-      .unique()
+    const message = await ctx.db.get(messageId)
 
     if (!message || message.role !== "assistant") {
       throw new ConvexError("No message found")
     }
 
-    const thread = await ctx.db.get(message.threadId)
-    if (!thread) throw new ConvexError("Thread not found")
+    const thread: Doc<"threads"> = await ctx.runQuery(api.threads.getByUserId, {
+      threadId: message.threadId,
+      userId: user.subject,
+      allowShared: true
+    })
 
     const messagesBefore = await ctx.db
       .query("messages")
@@ -182,10 +224,10 @@ export const branchOff = mutation({
 
     const newThreadId = await ctx.db.insert("threads", {
       title: thread.title,
-      userId: thread.userId,
+      userId: user.subject,
       lastMessageAt: Date.now(),
-      branchParentThreadId: thread._id,
-      modelId: thread.modelId
+      modelId: thread.modelId,
+      branchParentThreadId: thread._id
     })
 
     for (const { _id, _creationTime, ...oldMessage } of messagesBefore) {
@@ -196,7 +238,7 @@ export const branchOff = mutation({
   }
 })
 
-export const getThreadModel = query({
+export const getModel = query({
   args: {
     threadId: v.optional(v.id("threads"))
   },
@@ -206,44 +248,61 @@ export const getThreadModel = query({
 
     if (!threadId) return null
 
-    const thread = await ctx.db
-      .query("threads")
-      .withIndex("by_user_id", (q) => q.eq("userId", identity.subject))
-      .filter((q) => q.eq(q.field("_id"), threadId))
-      .unique()
+    try {
+      const thread: Doc<"threads"> = await ctx.runQuery(
+        api.threads.getByUserId,
+        {
+          threadId,
+          userId: identity.subject,
+          allowShared: true
+        }
+      )
 
-    if (thread) {
       return getModelById(thread.modelId).id ?? null
+    } catch {
+      return null
     }
-
-    return null
   }
 })
 
-export const updateThreadModel = mutation({
+export const updateModel = mutation({
   args: {
-    threadId: v.id("threads"),
+    threadId: v.optional(v.id("threads")),
+    shareId: v.optional(v.string()),
     modelId: v.string()
   },
-  handler: async (ctx, { threadId, modelId }) => {
+  handler: async (ctx, { threadId, shareId, modelId }) => {
     if (!isModelValid(modelId)) throw new ConvexError("Invalid model")
 
     const identity = await ctx.auth.getUserIdentity()
     if (!identity) throw new ConvexError("Unauthorized")
 
-    const thread = await ctx.db
-      .query("threads")
-      .withIndex("by_user_id", (q) => q.eq("userId", identity.subject))
-      .filter((q) => q.eq(q.field("_id"), threadId))
-      .unique()
+    if ((!threadId && !shareId) || (threadId && shareId)) {
+      throw new ConvexError("Invalid thread")
+    }
+
+    let thread: Doc<"threads"> | null = null
+    if (threadId) {
+      thread = await ctx.runQuery(api.threads.getByUserId, {
+        threadId,
+        userId: identity.subject
+      })
+    } else {
+      thread = await ctx.db
+        .query("threads")
+        .withIndex("by_shared_thread_id", (q) =>
+          q.eq("sharedThreadId", shareId)
+        )
+        .unique()
+    }
 
     if (!thread) throw new ConvexError("Thread not found")
 
-    await ctx.db.patch(threadId, { modelId })
+    await ctx.db.patch(thread._id, { modelId, updatedAt: Date.now() })
   }
 })
 
-export const deleteThread = mutation({
+export const remove = mutation({
   args: {
     threadId: v.id("threads")
   },
@@ -251,17 +310,14 @@ export const deleteThread = mutation({
     const identity = await ctx.auth.getUserIdentity()
     if (!identity) throw new ConvexError("Unauthorized")
 
-    const thread = await ctx.db
-      .query("threads")
-      .withIndex("by_user_id", (q) => q.eq("userId", identity.subject))
-      .filter((q) => q.eq(q.field("_id"), threadId))
-      .unique()
-
-    if (!thread) throw new ConvexError("Thread not found")
+    const thread = await ctx.runQuery(api.threads.getByUserId, {
+      threadId,
+      userId: identity.subject
+    })
 
     const messages = await ctx.db
       .query("messages")
-      .withIndex("by_thread_id", (q) => q.eq("threadId", threadId))
+      .withIndex("by_thread_id", (q) => q.eq("threadId", thread._id))
       .collect()
 
     for (const message of messages) {
@@ -276,14 +332,40 @@ export const deleteThread = mutation({
       .collect()
 
     for (const thread of branchedThreads) {
-      await ctx.db.patch(thread._id, { branchParentThreadId: undefined })
+      await ctx.db.patch(thread._id, {
+        branchParentThreadId: undefined,
+        updatedAt: Date.now()
+      })
     }
 
     await ctx.db.delete(threadId)
   }
 })
 
-export const getThread = query({
+export const share = mutation({
+  args: {
+    threadId: v.id("threads"),
+    sharedThreadId: v.string(),
+    shareAccess: shareAccess
+  },
+  handler: async (ctx, { threadId, shareAccess, sharedThreadId }) => {
+    const identity = await ctx.auth.getUserIdentity()
+    if (!identity) throw new ConvexError("Unauthorized")
+
+    const thread = await ctx.runQuery(api.threads.getByUserId, {
+      threadId,
+      userId: identity.subject
+    })
+
+    await ctx.db.patch(thread._id, {
+      sharedThreadId,
+      shareAccess,
+      updatedAt: Date.now()
+    })
+  }
+})
+
+export const unshare = mutation({
   args: {
     threadId: v.id("threads")
   },
@@ -291,12 +373,82 @@ export const getThread = query({
     const identity = await ctx.auth.getUserIdentity()
     if (!identity) throw new ConvexError("Unauthorized")
 
-    const thread = await ctx.db
-      .query("threads")
-      .withIndex("by_user_id", (q) => q.eq("userId", identity.subject))
-      .filter((q) => q.eq(q.field("_id"), threadId))
-      .unique()
+    const thread = await ctx.runQuery(api.threads.getByUserId, {
+      threadId,
+      userId: identity.subject
+    })
 
-    return thread ?? null
+    await ctx.db.patch(thread._id, {
+      sharedThreadId: undefined,
+      shareAccess: undefined,
+      updatedAt: Date.now()
+    })
+  }
+})
+
+/**
+ * Internal queries and mutations
+ */
+
+export const updateInternalTitle = internalMutation({
+  args: {
+    threadId: v.id("threads"),
+    title: v.string()
+  },
+  handler: async (ctx, args) => {
+    await ctx.db.patch(args.threadId, {
+      title: args.title,
+      updatedAt: Date.now()
+    })
+  }
+})
+
+export const generateTitle = internalAction({
+  args: {
+    threadId: v.id("threads"),
+    prompt: v.string()
+  },
+  handler: async (ctx, { prompt, threadId }) => {
+    try {
+      const { text } = await generateText({
+        model: google("gemini-2.0-flash-lite"),
+        prompt: `Write a clear and short title for this chat:\n\n${prompt}`,
+        system:
+          "Your job is to make short and clear titles based on chat content. Focus on the main topic. " +
+          "Keep it under 15 words. Don't use quotes, emojis, or markdown. Just return the title.",
+        maxTokens: 25,
+        temperature: 0.1
+      })
+
+      await ctx.runMutation(internal.threads.updateInternalTitle, {
+        threadId,
+        title: text
+      })
+    } catch (error) {
+      console.error("Error generating thread title", threadId, error)
+    }
+  }
+})
+
+export const getByUserId = query({
+  args: {
+    threadId: v.id("threads"),
+    userId: v.string(),
+    allowShared: v.optional(v.boolean())
+  },
+  handler: async (ctx, { threadId, userId, allowShared = false }) => {
+    const thread = await ctx.db.get(threadId)
+    const isShared = !!thread?.sharedThreadId
+    const isOwner = thread?.userId === userId
+
+    if (
+      !thread ||
+      (!allowShared && !isOwner) ||
+      (allowShared && !isShared && !isOwner)
+    ) {
+      throw new ConvexError("No thread found")
+    }
+
+    return thread
   }
 })

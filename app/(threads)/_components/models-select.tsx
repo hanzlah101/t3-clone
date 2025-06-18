@@ -8,11 +8,11 @@ import { useMediaQuery } from "@/hooks/use-media-query"
 import { useCookieState } from "@/hooks/use-cookie-state"
 import {
   ChevronDownIcon,
-  FileTextIcon,
-  GlobeIcon,
-  ImagesIcon,
-  InfoIcon,
-  type LucideIcon
+  InfoIcon
+  // FileTextIcon,
+  // GlobeIcon,
+  // ImagesIcon,
+  // type LucideIcon
 } from "lucide-react"
 
 import { api } from "@/convex/_generated/api"
@@ -53,7 +53,8 @@ export function ModelsSelect({
 }) {
   const isDesktop = useMediaQuery("(min-width: 768px)")
   const [isOpen, setIsOpen] = useState(false)
-  const { threadId }: { threadId?: Id<"threads"> } = useParams()
+  const { threadId, shareId }: { threadId?: Id<"threads">; shareId?: string } =
+    useParams()
 
   const [localModelId, setLocalModelId] = useCookieState<ModelId>(
     "model_id",
@@ -62,15 +63,15 @@ export function ModelsSelect({
 
   const { isSignedIn } = useAuth()
   const modelId = useQuery(
-    api.threads.getThreadModel,
+    api.threads.getModel,
     isSignedIn ? { threadId } : "skip"
   )
 
-  const updateModel = useMutation(
-    api.threads.updateThreadModel
-  ).withOptimisticUpdate((store, { modelId }) => {
-    store.setQuery(api.threads.getThreadModel, { threadId }, modelId as ModelId)
-  })
+  const updateModel = useMutation(api.threads.updateModel).withOptimisticUpdate(
+    (store, { modelId }) => {
+      store.setQuery(api.threads.getModel, { threadId }, modelId as ModelId)
+    }
+  )
 
   const model = useMemo(() => {
     return getModelById(modelId ?? localModelId)
@@ -83,7 +84,7 @@ export function ModelsSelect({
 
   function handleSelect(modelId: ModelId) {
     setLocalModelId(modelId)
-    if (threadId) updateModel({ threadId, modelId })
+    if (threadId || shareId) updateModel({ threadId, modelId, shareId })
     handleOpenChange(false)
   }
 
@@ -104,7 +105,7 @@ export function ModelsSelect({
         <PopoverTrigger asChild>{trigger}</PopoverTrigger>
         <PopoverContent
           align="start"
-          className="bg-popover/60 w-auto p-0 backdrop-blur-md"
+          className="bg-popover/60 w-[400px] p-0 backdrop-blur-md"
           onCloseAutoFocus={(evt) => evt.preventDefault()}
         >
           <ModelsSelectContent onSelect={handleSelect} />
@@ -129,7 +130,7 @@ function ModelsSelectContent({
   onSelect: (modelId: ModelId) => void
 }) {
   return (
-    <Command className="text-foreground bg-transparent">
+    <Command className="text-foreground w-full bg-transparent">
       <CommandInput
         wrapperClassName="h-12"
         className="h-12"
@@ -174,7 +175,7 @@ function ModelsSelectContent({
                     </Tooltip>
                   </div>
 
-                  <div className="ml-auto flex items-center gap-1">
+                  {/* <div className="ml-auto flex items-center gap-1">
                     {model.supportsSearch && (
                       <FeatureTip
                         icon={GlobeIcon}
@@ -195,7 +196,7 @@ function ModelsSelectContent({
                         tooltip="Supports PDF upload & analysis"
                       />
                     )}
-                  </div>
+                  </div> */}
                 </CommandItem>
               ))}
             </CommandGroup>
@@ -206,19 +207,19 @@ function ModelsSelectContent({
   )
 }
 
-function FeatureTip({
-  icon: Icon,
-  tooltip
-}: {
-  icon: LucideIcon
-  tooltip: string
-}) {
-  return (
-    <Tooltip>
-      <TooltipTrigger className="bg-accent rounded-md p-1">
-        <Icon className="text-accent-foreground/60 size-4" />
-      </TooltipTrigger>
-      <TooltipContent>{tooltip}</TooltipContent>
-    </Tooltip>
-  )
-}
+// function FeatureTip({
+//   icon: Icon,
+//   tooltip
+// }: {
+//   icon: LucideIcon
+//   tooltip: string
+// }) {
+//   return (
+//     <Tooltip>
+//       <TooltipTrigger className="bg-accent rounded-md p-1">
+//         <Icon className="text-accent-foreground/60 size-4" />
+//       </TooltipTrigger>
+//       <TooltipContent>{tooltip}</TooltipContent>
+//     </Tooltip>
+//   )
+// }

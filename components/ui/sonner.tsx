@@ -9,11 +9,15 @@ function Toaster({ ...props }: ToasterProps) {
   return (
     <Sonner
       theme={theme as ToasterProps["theme"]}
+      toastOptions={{
+        classNames: {
+          toast: "backdrop-blur-xl !border-border/70"
+        }
+      }}
       style={
         {
-          "--normal-bg": "var(--popover)",
-          "--normal-text": "var(--popover-foreground)",
-          "--normal-border": "var(--border)"
+          "--normal-bg": "var(--popover)/90",
+          "--normal-text": "var(--popover-foreground)"
         } as React.CSSProperties
       }
       {...props}

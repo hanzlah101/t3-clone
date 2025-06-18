@@ -9,7 +9,7 @@ import { getModelById } from "@/lib/models"
 import { getModelProvider } from "@/lib/model-providers"
 import { webSearch } from "@/lib/search-tool"
 import { DEFAULT_ERROR } from "@/lib/constants"
-import type { Doc, Id } from "@/convex/_generated/dataModel"
+import { type Id } from "@/convex/_generated/dataModel"
 
 export async function POST(req: Request) {
   try {
@@ -26,15 +26,16 @@ export async function POST(req: Request) {
 
     const threadId = input.threadId as Id<"threads">
 
-    const thread = await convex.query(api.threads.getById, {
+    const thread = await convex.query(api.threads.getByUserId, {
       threadId,
-      userId
+      userId,
+      allowShared: true
     })
 
     const modelConfig = getModelById(thread.modelId)
     const modelProvider = getModelProvider(modelConfig)
 
-    const messages = await convex.query(api.messages.getServerMessages, {
+    const messages = await convex.query(api.messages.listInternal, {
       threadId,
       userId
     })
@@ -92,7 +93,7 @@ export async function POST(req: Request) {
       messages: formattedMessages,
       maxTokens: modelConfig.maxTokens,
       temperature: modelConfig.temperature,
-      maxSteps: search ? 2 : 1,
+      maxSteps: search ? 3 : 1,
       tools,
       onChunk: async ({ chunk }) => {
         if (chunk.type === "reasoning") {
@@ -104,7 +105,7 @@ export async function POST(req: Request) {
         }
       },
       onFinish: async ({ text, reasoning }) => {
-        await convex.mutation(api.messages.updateAssistantMessage, {
+        await convex.mutation(api.messages.update, {
           _id: lastMessage._id,
           content: text,
           status: "completed",
@@ -114,42 +115,29 @@ export async function POST(req: Request) {
       onError: async ({ error }) => {
         console.log("[LLM_STREAM_ERROR]", error)
 
-        await convex.mutation(api.messages.updateAssistantMessage, {
+        await convex.mutation(api.messages.update, {
           _id: lastMessage._id,
           status: "error",
           reasoning: reasoning ?? undefined,
-          content: content ?? DEFAULT_ERROR,
+          content: content ?? "",
           error: DEFAULT_ERROR
         })
       }
     })
 
     req.signal?.addEventListener("abort", async () => {
-      const lastMessage = await convex.query(api.messages.getLastMessage, {
-        threadId,
-        userId
-      })
-
       if (!lastMessage || lastMessage.role !== "assistant") {
         abortController.abort()
         return
       }
 
-      const data = {
+      await convex.mutation(api.messages.update, {
         _id: lastMessage._id,
         reasoning: reasoning ?? undefined,
         content: content ?? "User disconnected",
         status: "disconnected",
         error: "User disconnected"
-      } as Doc<"messages">
-
-      if (lastMessage.status === "cancelled") {
-        data.status = "cancelled"
-        data.error = "Stopped by user"
-        data.content = content ?? "Stopped by user"
-      }
-
-      await convex.mutation(api.messages.updateAssistantMessage, data)
+      })
 
       abortController.abort()
     })

@@ -1,15 +1,19 @@
 "use client"
 
 import { UserButton } from "@clerk/nextjs"
+import { useParams } from "next/navigation"
 import { Authenticated, AuthLoading } from "convex/react"
 
 import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
 import { ROUTES } from "@/lib/constants"
 import { SidebarTrigger, useSidebar } from "@/components/ui/sidebar"
+import { ShareThread } from "./share-thread"
+import { type Id } from "@/convex/_generated/dataModel"
 
 export function Header() {
   const { open } = useSidebar()
+  const { threadId }: { threadId?: Id<"threads"> } = useParams()
 
   return (
     <header
@@ -23,8 +27,12 @@ export function Header() {
       </div>
 
       <div className="ml-auto flex items-center space-x-2">
+        {threadId && <ShareThread />}
+
         <Authenticated>
-          <UserButton signInUrl={ROUTES.auth} />
+          <div className="bg-accent size-7 shrink-0 rounded-full">
+            <UserButton signInUrl={ROUTES.auth} />
+          </div>
         </Authenticated>
         <AuthLoading>
           <Skeleton className="size-7 shrink-0 rounded-full" />
