@@ -1,24 +1,21 @@
-"use client"
+import { preloadQuery } from "convex/nextjs"
 
-import { useParams } from "next/navigation"
-import { useQuery } from "convex/react"
-
-import { Thread } from "../../_components/thread"
-import { TextShimmer } from "@/components/ui/text-shimmer"
 import { api } from "@/convex/_generated/api"
-import { type Id } from "@/convex/_generated/dataModel"
+import { getAuthToken } from "@/lib/auth"
+import { ThreadMessages } from "../../_components/thread-messages"
 
-export default function ShareThreadPage() {
-  const { shareId }: { shareId: Id<"threads"> } = useParams()
-  const messages = useQuery(api.messages.listShared, { shareId })
+type ShareThreadProps = {
+  params: Promise<{ shareId: string }>
+}
 
-  if (messages === undefined) {
-    return (
-      <div className="mx-auto max-w-4xl p-8 pt-16">
-        <TextShimmer>Loading...</TextShimmer>
-      </div>
-    )
-  }
+export default async function ShareThread({ params }: ShareThreadProps) {
+  const { shareId } = await params
+  const token = await getAuthToken()
+  const preloaded = await preloadQuery(
+    api.messages.listShared,
+    { shareId },
+    { token }
+  )
 
-  return <Thread queryMessages={messages} />
+  return <ThreadMessages preloaded={preloaded} />
 }

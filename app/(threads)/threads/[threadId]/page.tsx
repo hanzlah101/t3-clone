@@ -1,15 +1,24 @@
-"use client"
+import { preloadQuery } from "convex/nextjs"
 
-import { useParams } from "next/navigation"
-import { useQuery } from "convex/react"
-
-import { Thread } from "../_components/thread"
 import { api } from "@/convex/_generated/api"
+import { getAuthToken } from "@/lib/auth"
+import { ThreadMessages } from "../_components/thread-messages"
 import { type Id } from "@/convex/_generated/dataModel"
 
-export default function ThreadPage() {
-  const { threadId }: { threadId: Id<"threads"> } = useParams()
-  const messages = useQuery(api.messages.list, { threadId })
+type ThreadProps = {
+  params: Promise<{
+    threadId: Id<"threads">
+  }>
+}
 
-  return <Thread queryMessages={messages} />
+export default async function Thread({ params }: ThreadProps) {
+  const { threadId } = await params
+  const token = await getAuthToken()
+  const preloaded = await preloadQuery(
+    api.messages.list,
+    { threadId },
+    { token }
+  )
+
+  return <ThreadMessages preloaded={preloaded} />
 }

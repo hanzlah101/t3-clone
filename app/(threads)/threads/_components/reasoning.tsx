@@ -10,20 +10,21 @@ import { Spinner } from "@/components/ui/spinner"
 import { Button } from "@/components/ui/button"
 
 export type ReasoningPart = {
-  type: "reasoning"
-  reasoning: string
-  details: Array<{ type: "text"; text: string }>
+  isReasoning?: boolean
+  details: (
+    | {
+        type: "text"
+        text: string
+        signature?: string
+      }
+    | {
+        type: "redacted"
+        data: string
+      }
+  )[]
 }
 
-type ReasoningMessagePartProps = {
-  part: ReasoningPart
-  isReasoning: boolean
-}
-
-export function ReasoningMessagePart({
-  part,
-  isReasoning
-}: ReasoningMessagePartProps) {
+export function Reasoning({ isReasoning, details }: ReasoningPart) {
   const [isExpanded, setIsExpanded] = useState(true)
 
   const variants = {
@@ -81,7 +82,7 @@ export function ReasoningMessagePart({
             variants={variants}
             transition={{ duration: 0.2, ease: "easeInOut" }}
           >
-            {part.details.map((detail, detailIndex) =>
+            {details.map((detail, detailIndex) =>
               detail.type === "text" ? (
                 <MarkdownRenderer key={detailIndex}>
                   {detail.text}

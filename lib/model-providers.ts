@@ -9,7 +9,7 @@ export function getModelProvider(config: ModelConfig) {
     case "openai":
       return openai(config.id)
     case "gemini":
-      return google(config.id, { useSearchGrounding: true })
+      return google(config.id, { useSearchGrounding: false })
     case "deepseek":
       return deepseek(config.id)
     case "anthropic":

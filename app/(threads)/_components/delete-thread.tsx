@@ -61,8 +61,8 @@ export function DeleteThread({
           <AlertDialogTitle>Delete thread</AlertDialogTitle>
           <AlertDialogDescription>
             Are you sure you want to delete{" "}
-            <span className="font-medium">{thread.title}</span>? This action
-            cannot be undone.
+            <span className="text-foreground font-medium">{thread.title}</span>?
+            This action cannot be undone.
           </AlertDialogDescription>
         </AlertDialogHeader>
 
