@@ -29,6 +29,7 @@ import { Header } from "./_components/header"
 import { ThreadInput } from "./_components/thread-input"
 import { ThreadsList } from "./_components/threads-list"
 import { ThreadsWrapper } from "./_components/threads-wrapper"
+import { SearchModal } from "./_components/search-modal"
 
 function ThreadsLoading() {
   return (
@@ -65,42 +66,45 @@ export default async function ThreadsLayout({
   )
 
   return (
-    <SidebarProvider defaultOpen={sidebarState}>
-      <Sidebar>
-        <SidebarHeader>
-          <div className="flex items-center justify-between">
-            <SidebarTrigger />
-            <Link
-              href="/"
-              className="text-primary focus-visible:ring-ring text-[23px] font-bold outline-none focus-visible:ring-2"
-            >
-              T3.Clone
-            </Link>
-            <ThemeSwitcher />
-          </div>
+    <>
+      <SearchModal />
+      <SidebarProvider defaultOpen={sidebarState}>
+        <Sidebar>
+          <SidebarHeader>
+            <div className="flex items-center justify-between">
+              <SidebarTrigger />
+              <Link
+                href="/"
+                className="text-primary focus-visible:ring-ring text-[23px] font-bold outline-none focus-visible:ring-2"
+              >
+                T3.Clone
+              </Link>
+              <ThemeSwitcher />
+            </div>
 
-          <Button className="mt-2 w-full" asChild>
-            <Link href="/">New Chat</Link>
-          </Button>
-        </SidebarHeader>
+            <Button className="mt-2 w-full" asChild>
+              <Link href="/">New Chat</Link>
+            </Button>
+          </SidebarHeader>
 
-        <SidebarContent className="overflow-x-hidden outline-none">
-          <Suspense fallback={<ThreadsLoading />}>
-            <ThreadsListAsync />
-          </Suspense>
-        </SidebarContent>
+          <SidebarContent className="overflow-x-hidden outline-none">
+            <Suspense fallback={<ThreadsLoading />}>
+              <ThreadsListAsync />
+            </Suspense>
+          </SidebarContent>
 
-        <SidebarRail />
-      </Sidebar>
+          <SidebarRail />
+        </Sidebar>
 
-      <SidebarInset className="max-h-svh overflow-hidden">
-        <ThreadsWrapper>
-          <Header />
-          <div className="h-full flex-1">{children}</div>
-        </ThreadsWrapper>
-        <ThreadInput modelId={modelId} hasSearch={hasSearch} />
-      </SidebarInset>
-    </SidebarProvider>
+        <SidebarInset className="max-h-svh overflow-hidden">
+          <ThreadsWrapper>
+            <Header />
+            <div className="h-full flex-1">{children}</div>
+          </ThreadsWrapper>
+          <ThreadInput modelId={modelId} hasSearch={hasSearch} />
+        </SidebarInset>
+      </SidebarProvider>
+    </>
   )
 }
 
