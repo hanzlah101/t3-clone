@@ -244,12 +244,12 @@ function ThreadItem({
           <ContextMenuItem
             onSelect={() => {
               navigator.clipboard
-                .writeText(thread._id)
-                .then(() => toast.success("Thread ID copied to clipboard"))
+                .writeText(`${window.location.origin}/threads/${thread._id}`)
+                .then(() => toast.success("Thread url copied to clipboard"))
             }}
           >
             <CopyIcon />
-            Copy ID
+            Copy URL
           </ContextMenuItem>
           <ContextMenuItem onSelect={startEditing}>
             <EditIcon />

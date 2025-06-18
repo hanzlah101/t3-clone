@@ -17,6 +17,7 @@ import { Button } from "@/components/ui/button"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { CopyButton } from "@/components/copy-button"
 import { Label } from "@/components/ui/label"
+import { focusThreadInput } from "@/lib/utils"
 import { type Id } from "@/convex/_generated/dataModel"
 import {
   Popover,
@@ -125,6 +126,10 @@ export function ShareThread() {
         align="end"
         alignOffset={-10}
         className="bg-popover/60 flex w-84 backdrop-blur"
+        onCloseAutoFocus={(evt) => {
+          evt.preventDefault()
+          focusThreadInput()
+        }}
       >
         {thread?.sharedThreadId ? (
           <div className="w-full space-y-4">

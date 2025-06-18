@@ -11,51 +11,40 @@ export const DEFAULT_MODEL: ModelId = "gemini-2.0-flash-lite"
 export const SUPPORTED_MODELS = Object.freeze([
   // OpenAI Models
   {
-    id: "gpt-4o",
-    name: "GPT-4o",
-    description: "OpenAI's flagship multimodal model with advanced reasoning",
-    provider: "openai",
-    supportsSearch: true,
-    supportsImageUploads: true,
-    supportsPDFUploads: true,
-    maxTokens: 4096,
-    temperature: 0.7
-  },
-  {
     id: "gpt-4o-mini",
     name: "GPT-4o Mini",
-    description: "Faster, cost-effective version of GPT-4o",
+    description: "OpenAI's efficient model with multimodal capabilities",
     provider: "openai",
-    supportsSearch: true,
+    supportsSearch: false,
     supportsImageUploads: true,
-    supportsPDFUploads: true,
+    supportsPDFUploads: false,
     maxTokens: 16384,
     temperature: 0.7
   },
   {
-    id: "o1-preview",
-    name: "o1 Preview",
-    description: "OpenAI's reasoning model for complex problem-solving",
+    id: "gpt-4.1-mini",
+    name: "GPT-4.1 Mini",
+    description: "Latest OpenAI model with improved reasoning",
     provider: "openai",
     supportsSearch: false,
-    supportsImageUploads: false,
+    supportsImageUploads: true,
     supportsPDFUploads: false,
-    maxTokens: 32768,
-    temperature: 1.0
-  },
-  {
-    id: "o1-mini",
-    name: "o1 Mini",
-    description: "Smaller, faster version of the o1 reasoning model",
-    provider: "openai",
-    supportsSearch: false,
-    supportsImageUploads: false,
-    supportsPDFUploads: false,
-    maxTokens: 65536,
-    temperature: 1.0
+    maxTokens: 16384,
+    temperature: 0.7
   },
 
   // Google Gemini Models
+  {
+    id: "gemini-2.5-flash-preview-04-17",
+    name: "Gemini 2.5 Flash",
+    description: "Google's latest preview model with enhanced capabilities",
+    provider: "gemini",
+    supportsSearch: true,
+    supportsImageUploads: true,
+    supportsPDFUploads: true,
+    maxTokens: 8192,
+    temperature: 0.7
+  },
   {
     id: "gemini-2.0-flash-exp",
     name: "Gemini 2.0 Flash",
@@ -79,20 +68,10 @@ export const SUPPORTED_MODELS = Object.freeze([
     temperature: 0.7
   },
   {
-    id: "gemini-1.5-pro",
-    name: "Gemini 1.5 Pro",
-    description: "Google's most capable model with 1M token context",
-    provider: "gemini",
-    supportsSearch: true,
-    supportsImageUploads: true,
-    supportsPDFUploads: true,
-    maxTokens: 8192,
-    temperature: 0.7
-  },
-  {
     id: "gemini-1.5-flash",
     name: "Gemini 1.5 Flash",
-    description: "Fast, efficient model optimized for speed",
+    description:
+      "Fast, efficient model optimized for speed (Free tier available)",
     provider: "gemini",
     supportsSearch: true,
     supportsImageUploads: true,
@@ -103,7 +82,7 @@ export const SUPPORTED_MODELS = Object.freeze([
 
   // DeepSeek Models
   {
-    id: "deepseek-chat",
+    id: "deepseek/deepseek-chat:free",
     name: "DeepSeek Chat",
     description: "DeepSeek's conversational AI model",
     provider: "deepseek",
@@ -114,51 +93,51 @@ export const SUPPORTED_MODELS = Object.freeze([
     temperature: 0.7
   },
   {
-    id: "deepseek-reasoner",
-    name: "DeepSeek Reasoner",
+    id: "deepseek/deepseek-r1:free",
+    name: "DeepSeek R1",
     description: "Advanced reasoning model for complex tasks",
     provider: "deepseek",
     supportsSearch: false,
     supportsImageUploads: false,
     supportsPDFUploads: false,
-    maxTokens: 4096,
+    maxTokens: 8192,
     temperature: 0.8
-  },
+  }
 
   // Anthropic Models
-  {
-    id: "claude-3-5-sonnet-20241022",
-    name: "Claude 3.5 Sonnet",
-    description: "Anthropic's balanced model for general use",
-    provider: "anthropic",
-    supportsSearch: false,
-    supportsImageUploads: true,
-    supportsPDFUploads: true,
-    maxTokens: 8192,
-    temperature: 0.7
-  },
-  {
-    id: "claude-3-5-haiku-20241022",
-    name: "Claude 3.5 Haiku",
-    description: "Fast, efficient model for quick tasks",
-    provider: "anthropic",
-    supportsSearch: false,
-    supportsImageUploads: true,
-    supportsPDFUploads: true,
-    maxTokens: 8192,
-    temperature: 0.7
-  },
-  {
-    id: "claude-3-opus-20240229",
-    name: "Claude 3 Opus",
-    description: "Anthropic's most capable model for complex tasks",
-    provider: "anthropic",
-    supportsSearch: false,
-    supportsImageUploads: true,
-    supportsPDFUploads: true,
-    maxTokens: 4096,
-    temperature: 0.7
-  }
+  // {
+  //   id: "claude-3-5-sonnet-20241022",
+  //   name: "Claude 3.5 Sonnet",
+  //   description: "Anthropic's balanced model for general use",
+  //   provider: "anthropic",
+  //   supportsSearch: false,
+  //   supportsImageUploads: true,
+  //   supportsPDFUploads: true,
+  //   maxTokens: 8192,
+  //   temperature: 0.7
+  // },
+  // {
+  //   id: "claude-3-5-haiku-20241022",
+  //   name: "Claude 3.5 Haiku",
+  //   description: "Fast, efficient model for quick tasks",
+  //   provider: "anthropic",
+  //   supportsSearch: false,
+  //   supportsImageUploads: true,
+  //   supportsPDFUploads: true,
+  //   maxTokens: 8192,
+  //   temperature: 0.7
+  // },
+  // {
+  //   id: "claude-3-opus-20240229",
+  //   name: "Claude 3 Opus",
+  //   description: "Anthropic's most capable model for complex tasks",
+  //   provider: "anthropic",
+  //   supportsSearch: false,
+  //   supportsImageUploads: true,
+  //   supportsPDFUploads: true,
+  //   maxTokens: 4096,
+  //   temperature: 0.7
+  // }
 ] as const)
 
 export type ModelConfig = (typeof SUPPORTED_MODELS)[number]

@@ -27,18 +27,19 @@ function useBottom() {
     return () => observer.disconnect()
   }, [])
 
-  return { isAtBottom, bottomRef }
+  return { isAtBottom, setIsAtBottom, bottomRef }
 }
 
 export function ScrollWrapper({ children }: { children: React.ReactNode }) {
   const [formHeight, setFormHeight] = useState(DEFAULT_PADDING)
-  const { isAtBottom, bottomRef } = useBottom()
+  const { isAtBottom, setIsAtBottom, bottomRef } = useBottom()
 
   const containerRef = useRef<HTMLDivElement>(null)
 
   const scrollToBottom = () => {
     containerRef.current?.scrollTo({ top: 0, behavior: "instant" })
     focusThreadInput()
+    setIsAtBottom(true)
   }
 
   useEffect(() => {
@@ -65,6 +66,7 @@ export function ScrollWrapper({ children }: { children: React.ReactNode }) {
     if (isAtBottom) {
       scrollToBottom()
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [formHeight, isAtBottom])
 
   const padding = Math.max(formHeight, DEFAULT_PADDING)

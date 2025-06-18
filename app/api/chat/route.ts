@@ -32,9 +32,6 @@ export async function POST(req: Request) {
       allowShared: true
     })
 
-    const modelConfig = getModelById(thread.modelId)
-    const modelProvider = getModelProvider(modelConfig)
-
     const messages = await convex.query(api.messages.listInternal, {
       threadId,
       userId
@@ -53,6 +50,9 @@ export async function POST(req: Request) {
     const abortController = new AbortController()
 
     const search = lastMessage.model?.search ?? false
+
+    const modelConfig = getModelById(thread.modelId)
+    const modelProvider = getModelProvider(modelConfig, search)
 
     const formattedMessages = messages
       .map((msg) => ({
@@ -95,7 +95,7 @@ export async function POST(req: Request) {
       temperature: modelConfig.temperature,
       maxSteps: search ? 3 : 1,
       tools,
-      onChunk: async ({ chunk }) => {
+      onChunk: ({ chunk }) => {
         if (chunk.type === "reasoning") {
           reasoning += chunk.textDelta
         }
@@ -126,8 +126,8 @@ export async function POST(req: Request) {
     })
 
     req.signal?.addEventListener("abort", async () => {
+      abortController.abort()
       if (!lastMessage || lastMessage.role !== "assistant") {
-        abortController.abort()
         return
       }
 
@@ -138,11 +138,9 @@ export async function POST(req: Request) {
         status: "disconnected",
         error: "User disconnected"
       })
-
-      abortController.abort()
     })
 
-    return result.toDataStreamResponse()
+    return result.toDataStreamResponse({ sendReasoning: true })
   } catch (error) {
     console.log("[API_ERROR]", error)
 
