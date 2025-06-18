@@ -121,6 +121,9 @@ export function ThreadMessages({
                 <Reasoning
                   key={`${part.type}-${index}`}
                   details={part.details}
+                  isReasoning={
+                    status === "streaming" && index === stream.parts.length - 1
+                  }
                 />
               )
             }
@@ -129,8 +132,8 @@ export function ThreadMessages({
       )}
 
       {(isSearching || status === "submitted") && (
-        <div className="relative h-0 overflow-visible">
-          <TextShimmer className="pointer-events-none absolute top-0 left-0">
+        <div className="overflow-visible">
+          <TextShimmer className="pointer-events-none">
             {isSearching ? "Searching the web..." : "Thinking..."}
           </TextShimmer>
         </div>

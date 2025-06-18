@@ -126,6 +126,7 @@ const filenameIconMap = {
   "*less": SiLess,
   "*md": SiMarkdown,
   "*mdx": SiMdx,
+  "*markdown": SiMdx,
   "*mintlify.json": SiMintlify,
   "*mocha.opts": SiMocha,
   "*mustache": SiHandlebarsdotjs,
@@ -187,7 +188,6 @@ const lineNumberClassNames = cn(
 
 const darkModeClassNames = cn(
   "dark:[&_.shiki]:!text-[var(--shiki-dark)]",
-  "dark:[&_.shiki]:!bg-[var(--shiki-dark-bg)]",
   "dark:[&_.shiki]:![font-style:var(--shiki-dark-font-style)]",
   "dark:[&_.shiki]:![font-weight:var(--shiki-dark-font-weight)]",
   "dark:[&_.shiki]:![text-decoration:var(--shiki-dark-text-decoration)]",
@@ -235,9 +235,9 @@ const wordHighlightClassNames = cn(
 )
 
 const codeBlockClassName = cn(
-  "mt-0 bg-background text-sm",
+  "mt-0 dark:bg-base-900/40 bg-base-100 text-sm",
   "[&_pre]:py-4",
-  "[&_.shiki]:!bg-[var(--shiki-bg)]",
+  "[&_.shiki]:!bg-base-100 dark:[&_.shiki]:!bg-base-900/40",
   "[&_code]:w-full",
   "[&_code]:grid",
   "[&_code]:overflow-x-auto",

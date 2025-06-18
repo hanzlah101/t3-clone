@@ -9,6 +9,7 @@ export const env = createEnv({
     DEEPSEEK_API_KEY: z.string(),
     OPENAI_API_KEY: z.string(),
     ANTHROPIC_API_KEY: z.string(),
+    OPENROUTER_API_KEY: z.string(),
     EXA_API_KEY: z.string()
   },
   client: {
@@ -27,6 +28,7 @@ export const env = createEnv({
     DEEPSEEK_API_KEY: process.env.DEEPSEEK_API_KEY,
     OPENAI_API_KEY: process.env.OPENAI_API_KEY,
     ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY,
+    OPENROUTER_API_KEY: process.env.OPENROUTER_API_KEY,
     EXA_API_KEY: process.env.EXA_API_KEY,
 
     // client env variables

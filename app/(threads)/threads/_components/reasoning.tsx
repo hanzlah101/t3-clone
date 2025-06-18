@@ -2,12 +2,11 @@
 
 import { useEffect, useState } from "react"
 import { motion, AnimatePresence } from "motion/react"
-import { MarkdownRenderer } from "./markdown-renderer"
-import { ChevronDownIcon, ChevronUpIcon } from "lucide-react"
+import { ChevronRightIcon } from "lucide-react"
 
 import { cn } from "@/lib/utils"
-import { Spinner } from "@/components/ui/spinner"
-import { Button } from "@/components/ui/button"
+import { MarkdownRenderer } from "./markdown-renderer"
+import { TextShimmer } from "@/components/ui/text-shimmer"
 
 export type ReasoningPart = {
   isReasoning?: boolean
@@ -25,7 +24,7 @@ export type ReasoningPart = {
 }
 
 export function Reasoning({ isReasoning, details }: ReasoningPart) {
-  const [isExpanded, setIsExpanded] = useState(true)
+  const [isExpanded, setIsExpanded] = useState(false)
 
   const variants = {
     collapsed: {
@@ -43,39 +42,51 @@ export function Reasoning({ isReasoning, details }: ReasoningPart) {
   }
 
   useEffect(() => {
-    if (!isReasoning) {
-      setIsExpanded(false)
+    if (isReasoning) {
+      setIsExpanded(true)
     }
   }, [isReasoning])
 
+  useEffect(() => {
+    let timeout: NodeJS.Timeout
+    if (!isReasoning) {
+      timeout = setTimeout(() => setIsExpanded(false), 500)
+    }
+    return () => clearTimeout(timeout)
+  }, [isReasoning])
+
   return (
-    <div className="flex flex-col">
+    <div className="mb-3 flex flex-col">
       {isReasoning ? (
-        <div className="flex flex-row items-center gap-2">
-          <div className="text-sm font-medium">Reasoning</div>
-          <Spinner />
+        <div className="overflow-visible">
+          <TextShimmer className="pointer-events-none">
+            Reasoning...
+          </TextShimmer>
         </div>
       ) : (
-        <div className="flex flex-row items-center gap-2">
-          <div className="text-sm font-medium">Reasoned for a few seconds</div>
-          <Button
-            size="icon"
-            variant="ghost"
-            onClick={() => setIsExpanded(!isExpanded)}
-            className={cn("size-6 cursor-pointer rounded-full", {
-              "bg-accent dark:bg-accent-foreground": isExpanded
+        <button
+          onClick={() => setIsExpanded(!isExpanded)}
+          className={cn(
+            "flex w-fit items-center gap-2 font-mono text-sm font-medium transition-colors",
+            isExpanded
+              ? "text-foreground"
+              : "text-muted-foreground hover:text-muted-foreground/80"
+          )}
+        >
+          Reasoned for a few seconds
+          <ChevronRightIcon
+            className={cn("size-4 transition-all duration-300", {
+              "rotate-90": isExpanded
             })}
-          >
-            {isExpanded ? <ChevronDownIcon /> : <ChevronUpIcon />}
-          </Button>
-        </div>
+          />
+        </button>
       )}
 
       <AnimatePresence initial={false}>
         {isExpanded && (
           <motion.div
             key="reasoning"
-            className="text-base-400 dark:text-base-600 flex flex-col gap-4 border-l pl-3 text-sm"
+            className="text-muted-foreground flex flex-col gap-4 border-l-2 pl-3 text-sm"
             initial="collapsed"
             animate="expanded"
             exit="collapsed"
