@@ -28,6 +28,7 @@ import {
 import { Header } from "./_components/header"
 import { ThreadInput } from "./_components/thread-input"
 import { ThreadsList } from "./_components/threads-list"
+import { ThreadsWrapper } from "./_components/threads-wrapper"
 
 function ThreadsLoading() {
   return (
@@ -93,8 +94,10 @@ export default async function ThreadsLayout({
       </Sidebar>
 
       <SidebarInset className="max-h-svh overflow-hidden">
-        <Header />
-        <div className="h-full flex-1">{children}</div>
+        <ThreadsWrapper>
+          <Header />
+          <div className="h-full flex-1">{children}</div>
+        </ThreadsWrapper>
         <ThreadInput modelId={modelId} hasSearch={hasSearch} />
       </SidebarInset>
     </SidebarProvider>

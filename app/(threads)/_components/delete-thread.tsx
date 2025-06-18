@@ -8,6 +8,7 @@ import { parseError } from "@/lib/error"
 import { Button } from "@/components/ui/button"
 import { useRouter, useParams } from "next/navigation"
 import { ROUTES } from "@/lib/constants"
+import { useDeleteThread } from "@/stores/use-delete-thread"
 import { type Doc } from "@/convex/_generated/dataModel"
 import {
   AlertDialog,
@@ -30,15 +31,17 @@ export function DeleteThread({
 }) {
   const router = useRouter()
   const { threadId } = useParams()
-  const deleteThread = useMutation(
-    api.threads.deleteThread
-  ).withOptimisticUpdate((store, { threadId }) => {
-    const threads = store.getQuery(api.threads.list)
-    if (threads !== undefined) {
-      const newThreads = threads.filter((thread) => thread._id !== threadId)
-      store.setQuery(api.threads.list, {}, newThreads)
+  const setDeletingThread = useDeleteThread((state) => state.setDeletingThread)
+
+  const deleteThread = useMutation(api.threads.remove).withOptimisticUpdate(
+    (store, { threadId }) => {
+      const threads = store.getQuery(api.threads.list)
+      if (threads !== undefined) {
+        const newThreads = threads.filter((thread) => thread._id !== threadId)
+        store.setQuery(api.threads.list, {}, newThreads)
+      }
     }
-  })
+  )
 
   async function handleDelete() {
     await deleteThread({ threadId: thread._id }).catch((err) =>
@@ -46,6 +49,7 @@ export function DeleteThread({
     )
 
     if (threadId === thread._id) {
+      setDeletingThread(thread._id)
       router.push(ROUTES.afterLogin)
     }
   }

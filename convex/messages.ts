@@ -1,8 +1,10 @@
 import { ConvexError, v } from "convex/values"
 
 import { getModelById } from "@/lib/models"
-import { mutation, query } from "./_generated/server"
+import { api } from "./_generated/api"
+import { internalMutation, mutation, query } from "./_generated/server"
 import { messageModelSchema, messageRole, messageStatus } from "./schema"
+import { type Doc } from "./_generated/dataModel"
 
 export const list = query({
   args: {
@@ -12,73 +14,35 @@ export const list = query({
     const user = await ctx.auth.getUserIdentity()
     if (!user) throw new ConvexError("Unauthorized")
 
+    const thread: Doc<"threads"> = await ctx.runQuery(api.threads.getByUserId, {
+      threadId,
+      userId: user.subject
+    })
+
     const messages = await ctx.db
       .query("messages")
-      .withIndex("by_thread_and_user_id", (q) =>
-        q.eq("userId", user.subject).eq("threadId", threadId)
-      )
+      .withIndex("by_thread_id", (q) => q.eq("threadId", thread._id))
       .collect()
 
     return messages
   }
 })
 
-export const getServerMessages = query({
-  args: {
-    threadId: v.id("threads"),
-    userId: v.string()
-  },
-  handler: async (ctx, { threadId, userId }) => {
-    return await ctx.db
-      .query("messages")
-      .withIndex("by_thread_and_user_id", (q) =>
-        q.eq("userId", userId).eq("threadId", threadId)
-      )
-      .collect()
-  }
-})
-
-export const create = mutation({
-  args: {
-    threadId: v.id("threads"),
-    content: v.string(),
-    userId: v.string(),
-    role: messageRole,
-    status: messageStatus
-  },
-  handler: async (ctx, args) => {
-    const message = await ctx.db.insert("messages", args)
-    await ctx.db.patch(args.threadId, { lastMessageAt: Date.now() })
-    return message
-  }
-})
-
-export const createAssistantAndUserMessages = mutation({
+export const initMessages = internalMutation({
   args: {
     threadId: v.id("threads"),
     prompt: v.string(),
-    search: v.boolean()
+    search: v.boolean(),
+    userId: v.string(),
+    modelId: v.string()
   },
   handler: async (ctx, args) => {
-    const user = await ctx.auth.getUserIdentity()
-    if (!user) throw new ConvexError("Unauthorized")
-
-    const thread = await ctx.db
-      .query("threads")
-      .withIndex("by_user_id", (q) => q.eq("userId", user.subject))
-      .filter((q) => q.eq(q.field("_id"), args.threadId))
-      .unique()
-
-    if (!thread) {
-      throw new ConvexError("Thread not found")
-    }
-
-    const model = getModelById(thread.modelId)
+    const model = getModelById(args.modelId)
 
     await ctx.db.insert("messages", {
       threadId: args.threadId,
       content: args.prompt,
-      userId: user.subject,
+      userId: args.userId,
       role: "user",
       status: "completed"
     })
@@ -86,7 +50,7 @@ export const createAssistantAndUserMessages = mutation({
     await ctx.db.insert("messages", {
       threadId: args.threadId,
       content: "",
-      userId: user.subject,
+      userId: args.userId,
       role: "assistant",
       status: "waiting",
       model: {
@@ -100,7 +64,56 @@ export const createAssistantAndUserMessages = mutation({
   }
 })
 
-export const updateAssistantMessage = mutation({
+export const listShared = query({
+  args: {
+    shareId: v.string()
+  },
+  handler: async (ctx, { shareId }) => {
+    const user = await ctx.auth.getUserIdentity()
+    if (!user) throw new ConvexError("Unauthorized")
+
+    const thread = await ctx.db
+      .query("threads")
+      .withIndex("by_shared_thread_id", (q) => q.eq("sharedThreadId", shareId))
+      .unique()
+
+    if (!thread) {
+      throw new ConvexError("Thread not found")
+    }
+
+    const messages = await ctx.db
+      .query("messages")
+      .withIndex("by_thread_id", (q) => q.eq("threadId", thread._id))
+      .collect()
+
+    return messages
+  }
+})
+
+/**
+ * Internal queries and mutations
+ */
+
+export const listInternal = query({
+  args: {
+    threadId: v.id("threads"),
+    userId: v.string()
+  },
+  handler: async (ctx, { threadId, userId }) => {
+    const thread: Doc<"threads"> = await ctx.runQuery(api.threads.getByUserId, {
+      threadId,
+      userId,
+      allowShared: true
+    })
+
+    return await ctx.db
+      .query("messages")
+      .withIndex("by_thread_id", (q) => q.eq("threadId", thread._id))
+      .collect()
+  }
+})
+
+export const update = mutation({
   args: {
     _id: v.id("messages"),
     content: v.optional(v.string()),
@@ -114,18 +127,17 @@ export const updateAssistantMessage = mutation({
   }
 })
 
-export const getLastMessage = query({
+export const createInternal = internalMutation({
   args: {
     threadId: v.id("threads"),
-    userId: v.string()
+    content: v.string(),
+    userId: v.string(),
+    role: messageRole,
+    status: messageStatus
   },
-  handler: async (ctx, { threadId, userId }) => {
-    return await ctx.db
-      .query("messages")
-      .withIndex("by_thread_and_user_id", (q) =>
-        q.eq("userId", userId).eq("threadId", threadId)
-      )
-      .order("desc")
-      .first()
+  handler: async (ctx, args) => {
+    const message = await ctx.db.insert("messages", args)
+    await ctx.db.patch(args.threadId, { lastMessageAt: Date.now() })
+    return message
   }
 })

@@ -128,8 +128,9 @@ function ThreadItem({
   const { threadId } = useParams()
   const [isEditing, setIsEditing] = useState(false)
   const [value, setValue] = useState("")
+
   const updateTitleMutation = useMutation(
-    api.threads.updateTitle
+    api.threads.update
   ).withOptimisticUpdate((store, { threadId, title }) => {
     const threads = store.getQuery(api.threads.list)
     if (threads !== undefined) {
@@ -223,7 +224,6 @@ function ThreadItem({
                     sideOffset={10}
                     align="center"
                     className="max-w-[300px]"
-                    hideWhenDetached
                   >
                     {thread.title}
                   </TooltipContent>

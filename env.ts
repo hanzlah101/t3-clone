@@ -12,6 +12,7 @@ export const env = createEnv({
     EXA_API_KEY: z.string()
   },
   client: {
+    NEXT_PUBLIC_URL: z.url(),
     NEXT_PUBLIC_CONVEX_URL: z.url(),
     NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: z.string(),
     NEXT_PUBLIC_CLERK_SIGN_IN_URL: z.string(),
@@ -29,6 +30,7 @@ export const env = createEnv({
     EXA_API_KEY: process.env.EXA_API_KEY,
 
     // client env variables
+    NEXT_PUBLIC_URL: process.env.NEXT_PUBLIC_URL,
     NEXT_PUBLIC_CONVEX_URL: process.env.NEXT_PUBLIC_CONVEX_URL,
     NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY:
       process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY,

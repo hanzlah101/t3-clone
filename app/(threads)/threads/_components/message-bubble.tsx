@@ -2,7 +2,7 @@
 
 import { memo, useTransition } from "react"
 import { useMutation } from "convex/react"
-import { useParams, useRouter } from "next/navigation"
+import { useRouter, useParams } from "next/navigation"
 import { useChat } from "@ai-sdk/react"
 import { type UIMessage } from "ai"
 
@@ -29,17 +29,17 @@ function MessageBubbleComp({
   parts,
   dbMessage
 }: UIMessage & { dbMessage?: Doc<"messages"> }) {
-  const { threadId }: { threadId: string } = useParams()
-  const { status } = useChat({ id: threadId })
+  const { threadId, shareId } = useParams()
+  const { status } = useChat({ id: (threadId ?? shareId) as string })
 
-  if (!content.trim()) return null
+  if (!content.trim() && dbMessage?.status === "waiting") return null
 
   const hasError =
     dbMessage &&
     ["error", "disconnected", "cancelled"].includes(dbMessage?.status)
 
   return (
-    <div className="group/message space-y-2">
+    <div className="group/message relative space-y-2 pb-8">
       <div
         className={cn({
           "bg-accent text-accent-foreground ml-auto w-fit max-w-xl rounded-xl px-4 py-2":
@@ -77,8 +77,8 @@ function MessageBubbleComp({
       {(dbMessage || role === "user") && (
         <div
           className={cn(
-            "flex w-fit items-center gap-2 opacity-0 transition-opacity group-hover/message:opacity-100",
-            role === "user" ? "ml-auto" : "mr-auto"
+            "absolute bottom-0 flex w-fit items-center gap-2 opacity-0 transition-opacity group-hover/message:opacity-100",
+            role === "user" ? "right-0" : "left-0"
           )}
         >
           <CopyButton text={content} className="size-8" />

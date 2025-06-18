@@ -3,6 +3,7 @@
 import { useState } from "react"
 import { toast } from "sonner"
 import { CheckIcon, CopyIcon } from "lucide-react"
+import { type VariantProps } from "class-variance-authority"
 
 import { cn } from "@/lib/utils"
 import { buttonVariants } from "@/components/ui/button"
@@ -12,12 +13,15 @@ import {
   TooltipTrigger
 } from "@/components/ui/tooltip"
 
-type ButtonProps = React.ComponentProps<typeof TooltipTrigger>
+type ButtonProps = React.ComponentProps<typeof TooltipTrigger> &
+  VariantProps<typeof buttonVariants>
 
 export function CopyButton({
   className,
   text,
   tooltip = "Copy message",
+  variant = "ghost",
+  size = "icon",
   ...props
 }: ButtonProps & { text: string; tooltip?: string }) {
   const [copied, setCopied] = useState(false)
@@ -38,8 +42,8 @@ export function CopyButton({
         onClick={() => handleCopy(text)}
         className={cn(
           buttonVariants({
-            variant: "ghost",
-            size: "icon",
+            variant,
+            size,
             className: "relative size-8 shrink-0"
           }),
           className
