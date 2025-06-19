@@ -1,4 +1,4 @@
-import { preloadQuery } from "convex/nextjs"
+import { fetchQuery } from "convex/nextjs"
 
 import { api } from "@/convex/_generated/api"
 import { getAuthToken } from "@/lib/auth"
@@ -11,11 +11,11 @@ type ShareThreadProps = {
 export default async function ShareThread({ params }: ShareThreadProps) {
   const { shareId } = await params
   const token = await getAuthToken()
-  const preloaded = await preloadQuery(
+  const messages = await fetchQuery(
     api.messages.listShared,
     { shareId },
     { token }
   )
 
-  return <ThreadMessages preloaded={preloaded} />
+  return <ThreadMessages initialMessages={messages} />
 }

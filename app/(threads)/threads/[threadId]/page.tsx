@@ -1,4 +1,4 @@
-import { preloadQuery } from "convex/nextjs"
+import { fetchQuery } from "convex/nextjs"
 
 import { api } from "@/convex/_generated/api"
 import { getAuthToken } from "@/lib/auth"
@@ -14,11 +14,7 @@ type ThreadProps = {
 export default async function Thread({ params }: ThreadProps) {
   const { threadId } = await params
   const token = await getAuthToken()
-  const preloaded = await preloadQuery(
-    api.messages.list,
-    { threadId },
-    { token }
-  )
+  const messages = await fetchQuery(api.messages.list, { threadId }, { token })
 
-  return <ThreadMessages preloaded={preloaded} />
+  return <ThreadMessages initialMessages={messages} />
 }
