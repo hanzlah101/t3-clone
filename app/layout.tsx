@@ -1,6 +1,6 @@
 import "./globals.css"
 
-import Script from "next/script"
+// import Script from "next/script"
 import { type Metadata } from "next"
 import { Geist, Geist_Mono } from "next/font/google"
 
@@ -32,12 +32,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <head>
+      {/* <head>
         <Script
           crossOrigin="anonymous"
           src="//unpkg.com/react-scan/dist/auto.global.js"
         />
-      </head>
+      </head> */}
 
       <body
         className={`${geistSans.variable} ${geistMono.variable} font-sans antialiased`}
