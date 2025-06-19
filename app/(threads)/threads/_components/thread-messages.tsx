@@ -3,7 +3,8 @@
 import { useMemo } from "react"
 import { useParams } from "next/navigation"
 import { useChat } from "@ai-sdk/react"
-import { type Preloaded, usePreloadedQuery } from "convex/react"
+import { useAuth } from "@clerk/nextjs"
+import { useQuery } from "convex/react"
 
 import { cn } from "@/lib/utils"
 import { TextShimmer } from "@/components/ui/text-shimmer"
@@ -14,16 +15,35 @@ import { MarkdownRenderer } from "./markdown-renderer"
 import { BranchOff } from "./branch-off"
 import { CopyButton } from "@/components/copy-button"
 import { getModelName } from "@/lib/models"
-import { type api } from "@/convex/_generated/api"
+import { api } from "@/convex/_generated/api"
+import type { Doc, Id } from "@/convex/_generated/dataModel"
+
+function useMessages() {
+  const { isSignedIn } = useAuth()
+  const { threadId, shareId }: { threadId?: Id<"threads">; shareId?: string } =
+    useParams()
+
+  const threadQuery = useQuery(
+    api.messages.list,
+    isSignedIn && threadId ? { threadId } : "skip"
+  )
+  const sharedQuery = useQuery(
+    api.messages.listShared,
+    isSignedIn && shareId ? { shareId } : "skip"
+  )
+
+  if (threadId) return threadQuery
+  if (shareId) return sharedQuery
+
+  return undefined
+}
 
 export function ThreadMessages({
-  preloaded
+  initialMessages
 }: {
-  preloaded: Preloaded<
-    typeof api.messages.list | typeof api.messages.listShared
-  >
+  initialMessages: Doc<"messages">[]
 }) {
-  const messages = usePreloadedQuery(preloaded)
+  const messages = useMessages() ?? initialMessages
 
   const { threadId, shareId } = useParams()
   const { messages: streamMessages, status } = useChat({
