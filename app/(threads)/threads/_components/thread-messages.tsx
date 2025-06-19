@@ -3,8 +3,7 @@
 import { useMemo } from "react"
 import { useParams } from "next/navigation"
 import { useChat } from "@ai-sdk/react"
-import { useAuth } from "@clerk/nextjs"
-import { useQuery } from "convex/react"
+import { useQuery, useConvexAuth } from "convex/react"
 
 import { cn } from "@/lib/utils"
 import { TextShimmer } from "@/components/ui/text-shimmer"
@@ -19,17 +18,17 @@ import { api } from "@/convex/_generated/api"
 import type { Doc, Id } from "@/convex/_generated/dataModel"
 
 function useMessages() {
-  const { isSignedIn } = useAuth()
+  const { isAuthenticated } = useConvexAuth()
   const { threadId, shareId }: { threadId?: Id<"threads">; shareId?: string } =
     useParams()
 
   const threadQuery = useQuery(
     api.messages.list,
-    isSignedIn && threadId ? { threadId } : "skip"
+    isAuthenticated && threadId ? { threadId } : "skip"
   )
   const sharedQuery = useQuery(
     api.messages.listShared,
-    isSignedIn && shareId ? { shareId } : "skip"
+    isAuthenticated && shareId ? { shareId } : "skip"
   )
 
   if (threadId) return threadQuery

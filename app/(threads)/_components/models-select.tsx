@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react"
 import { useParams } from "next/navigation"
 import { useMutation, useQuery } from "convex/react"
-import { useAuth } from "@clerk/nextjs"
+import { useConvexAuth } from "convex/react"
 import { useMediaQuery } from "@/hooks/use-media-query"
 import { useCookieState } from "@/hooks/use-cookie-state"
 import {
@@ -61,10 +61,10 @@ export function ModelsSelect({
     initialState
   )
 
-  const { isSignedIn } = useAuth()
+  const { isAuthenticated } = useConvexAuth()
   const modelId = useQuery(
     api.threads.getModel,
-    isSignedIn ? { threadId } : "skip"
+    isAuthenticated ? { threadId } : "skip"
   )
 
   const updateModel = useMutation(api.threads.updateModel).withOptimisticUpdate(

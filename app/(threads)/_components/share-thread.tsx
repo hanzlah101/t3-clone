@@ -4,7 +4,7 @@ import { z } from "zod/v4"
 import { toast } from "sonner"
 import { motion } from "motion/react"
 import { useForm } from "react-hook-form"
-import { useAuth } from "@clerk/nextjs"
+import { useConvexAuth } from "convex/react"
 import { GlobeIcon, Share2Icon } from "lucide-react"
 import { notFound, useParams } from "next/navigation"
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -42,10 +42,13 @@ type ShareThreadSchema = z.infer<typeof shareThreadSchema>
 type ShareAccess = ShareThreadSchema["shareAccess"]
 
 export function ShareThread() {
-  const { isSignedIn } = useAuth()
+  const { isAuthenticated } = useConvexAuth()
   const { threadId }: { threadId: Id<"threads"> } = useParams()
 
-  const thread = useQuery(api.threads.get, isSignedIn ? { threadId } : "skip")
+  const thread = useQuery(
+    api.threads.get,
+    isAuthenticated ? { threadId } : "skip"
+  )
 
   const shareThread = useMutation(api.threads.share).withOptimisticUpdate(
     (store, args) => {

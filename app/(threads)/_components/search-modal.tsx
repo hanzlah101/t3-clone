@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import { useTheme } from "next-themes"
-import { useAuth } from "@clerk/nextjs"
+import { useConvexAuth } from "convex/react"
 import { useQuery } from "convex/react"
 import { useRouter } from "next/navigation"
 import {
@@ -24,9 +24,9 @@ import {
 } from "@/components/ui/command"
 
 export function SearchModal() {
-  const { isSignedIn } = useAuth()
+  const { isAuthenticated } = useConvexAuth()
   const { setTheme } = useTheme()
-  const threads = useQuery(api.threads.list, isSignedIn ? {} : "skip")
+  const threads = useQuery(api.threads.list, isAuthenticated ? {} : "skip")
 
   const router = useRouter()
 
