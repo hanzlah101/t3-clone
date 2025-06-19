@@ -5,7 +5,7 @@ import { toast } from "sonner"
 import { useMemo, useState } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { useMutation, useQuery } from "convex/react"
-import { useAuth } from "@clerk/nextjs"
+import { useConvexAuth } from "convex/react"
 import { isToday, isYesterday, subDays, isAfter, subYears } from "date-fns"
 import { CopyIcon, EditIcon, Trash2Icon } from "lucide-react"
 import { type FunctionReturnType } from "convex/server"
@@ -51,9 +51,9 @@ export function ThreadsList({
 }: {
   initialThreads: FunctionReturnType<typeof api.threads.list>
 }) {
-  const { isSignedIn } = useAuth()
+  const { isAuthenticated } = useConvexAuth()
   const threads =
-    useQuery(api.threads.list, isSignedIn ? {} : "skip") ?? initialThreads
+    useQuery(api.threads.list, isAuthenticated ? {} : "skip") ?? initialThreads
 
   const [threadToDelete, setThreadToDelete] = useState<Thread | null>(null)
   const [isDeleteOpen, setIsDeleteOpen] = useState(false)
