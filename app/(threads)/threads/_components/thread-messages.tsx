@@ -10,7 +10,7 @@ import { ScrollWrapper } from "./scroll-wrapper"
 import { api } from "@/convex/_generated/api"
 import { MessageBubble } from "./message-bubble"
 import { StreamingMessage } from "./streaming-message"
-import type { Doc, Id } from "@/convex/_generated/dataModel"
+import { type Id } from "@/convex/_generated/dataModel"
 
 function useMessages() {
   const { isAuthenticated } = useConvexAuth()
@@ -28,16 +28,10 @@ function useMessages() {
 
   if (threadId) return threadQuery
   if (shareId) return sharedQuery
-
-  return undefined
 }
 
-export function ThreadMessages({
-  initialMessages
-}: {
-  initialMessages: Doc<"messages">[]
-}) {
-  const messages = useMessages() ?? initialMessages
+export function ThreadMessages() {
+  const messages = useMessages()
 
   const { threadId, shareId } = useParams()
   const { messages: streamMessages, status } = useChat({
@@ -45,7 +39,7 @@ export function ThreadMessages({
   })
 
   const stream = useMemo(() => streamMessages.at(-1), [streamMessages])
-  const lastMessage = useMemo(() => messages.at(-1), [messages])
+  const lastMessage = useMemo(() => messages?.at(-1), [messages])
 
   const isSearching = useMemo(() => {
     return (
@@ -68,6 +62,18 @@ export function ThreadMessages({
       (status === "streaming" || lastMessage?.status === "waiting")
     )
   }, [status, lastMessage?.status, stream])
+
+  if (messages === undefined) {
+    return (
+      <ScrollWrapper>
+        <div className="overflow-visible">
+          <TextShimmer className="pointer-events-none">
+            Loading thread...
+          </TextShimmer>
+        </div>
+      </ScrollWrapper>
+    )
+  }
 
   return (
     <ScrollWrapper>

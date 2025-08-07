@@ -1,5 +1,5 @@
 import { z, ZodError } from "zod/v4"
-import { smoothStream, streamText, type ToolSet } from "ai"
+import { streamText, type ToolSet } from "ai"
 import { ConvexError } from "convex/values"
 import { auth } from "@clerk/nextjs/server"
 
@@ -108,7 +108,6 @@ Your approach:
       temperature: modelConfig.temperature,
       maxSteps: search ? 3 : 1,
       tools,
-      experimental_transform: smoothStream(),
       onChunk: ({ chunk }) => {
         if (chunk.type === "reasoning") {
           reasoning += chunk.textDelta
