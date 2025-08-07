@@ -4,7 +4,8 @@ import { getCookie } from "@/lib/utils"
 
 export function useCookieState<T>(
   key: string,
-  initialValue: T
+  initialValue: T,
+  pollingInterval?: number
 ): [T, (value: T) => void] {
   const [value, setValue] = React.useState<T>(initialValue)
 
@@ -22,6 +23,22 @@ export function useCookieState<T>(
     },
     [key]
   )
+
+  React.useEffect(() => {
+    if (pollingInterval === undefined) return
+
+    const interval = setInterval(() => {
+      const cookieValue = getCookie(key)
+      const parsedValue = cookieValue !== undefined ? cookieValue : initialValue
+
+      // Only update if value actually changed
+      if (JSON.stringify(parsedValue) !== JSON.stringify(value)) {
+        setValue(parsedValue)
+      }
+    }, pollingInterval)
+
+    return () => clearInterval(interval)
+  }, [key, value, initialValue, pollingInterval])
 
   return [value, updateValue]
 }
