@@ -5,16 +5,11 @@ import { useParams } from "next/navigation"
 import { useChat } from "@ai-sdk/react"
 import { useQuery, useConvexAuth } from "convex/react"
 
-import { cn } from "@/lib/utils"
 import { TextShimmer } from "@/components/ui/text-shimmer"
 import { ScrollWrapper } from "./scroll-wrapper"
-import { DEFAULT_ERROR } from "@/lib/constants"
-import { Reasoning } from "./reasoning"
-import { MarkdownRenderer } from "./markdown-renderer"
-import { BranchOff } from "./branch-off"
-import { CopyButton } from "@/components/copy-button"
-import { getModelName } from "@/lib/models"
 import { api } from "@/convex/_generated/api"
+import { MessageBubble } from "./message-bubble"
+import { StreamingMessage } from "./streaming-message"
 import type { Doc, Id } from "@/convex/_generated/dataModel"
 
 function useMessages() {
@@ -76,79 +71,13 @@ export function ThreadMessages({
 
   return (
     <ScrollWrapper>
-      {messages.map((msg, index) => {
-        if (msg.status === "waiting" && !msg.content.trim()) return null
-        if (isStreaming && index === messages.length - 1) return null
-        const isError = ["error", "disconnected", "cancelled"].includes(
-          msg.status
+      {messages.map((msg, index) =>
+        isStreaming && index === messages.length - 1 ? null : (
+          <MessageBubble key={msg._id} {...msg} />
         )
-
-        return (
-          <div key={msg._id} className="group/message space-y-2">
-            <div
-              className={cn({
-                "bg-accent text-accent-foreground ml-auto w-fit max-w-xl rounded-xl px-4 py-2":
-                  msg.role === "user"
-              })}
-            >
-              {msg.reasoning && (
-                <Reasoning details={[{ type: "text", text: msg.reasoning }]} />
-              )}
-
-              <MarkdownRenderer>{msg.content}</MarkdownRenderer>
-            </div>
-
-            {isError && (
-              <div className="bg-destructive/15 text-destructive my-2 rounded-md px-4 py-3 text-[15px]">
-                {msg.error ?? DEFAULT_ERROR}
-              </div>
-            )}
-
-            <div
-              className={cn(
-                "flex w-fit items-center gap-2 opacity-0 transition-opacity group-hover/message:opacity-100",
-                msg.role === "user" ? "ml-auto" : "mr-auto"
-              )}
-            >
-              <CopyButton text={msg.content} className="size-8" />
-
-              {msg?.role === "assistant" && <BranchOff messageId={msg._id} />}
-
-              {msg?.role === "assistant" && msg?.model && (
-                <span className="text-muted-foreground text-[13px]">
-                  {getModelName(msg?.model?.name)}
-                </span>
-              )}
-            </div>
-          </div>
-        )
-      })}
-
-      {isStreaming && (
-        <div>
-          {stream?.parts.map((part, index) => {
-            if (part.type === "text") {
-              return (
-                <MarkdownRenderer key={`${part.type}-${index}`}>
-                  {part.text}
-                </MarkdownRenderer>
-              )
-            }
-
-            if (part.type === "reasoning") {
-              return (
-                <Reasoning
-                  key={`${part.type}-${index}`}
-                  details={part.details}
-                  isReasoning={
-                    status === "streaming" && index === stream.parts.length - 1
-                  }
-                />
-              )
-            }
-          })}
-        </div>
       )}
+
+      {isStreaming && <StreamingMessage stream={stream} />}
 
       {(isSearching || status === "submitted") && (
         <div className="overflow-visible">

@@ -83,8 +83,8 @@ export const SUPPORTED_MODELS = Object.freeze([
 
   // DeepSeek Models
   {
-    id: "deepseek/deepseek-chat:free",
-    name: "DeepSeek Chat",
+    id: "deepseek/deepseek-chat-v3-0324:free",
+    name: "DeepSeek V3",
     description: "DeepSeek's conversational AI model",
     provider: "deepseek",
     supportsSearch: false,

@@ -49,9 +49,9 @@ export async function POST(req: Request) {
 
     const abortController = new AbortController()
 
-    const search = lastMessage.model?.search ?? false
-
     const modelConfig = getModelById(thread.modelId)
+    const search =
+      (lastMessage.model?.search ?? false) && modelConfig.supportsSearch
     const modelProvider = getModelProvider(modelConfig, search)
 
     const formattedMessages = messages

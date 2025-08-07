@@ -189,14 +189,30 @@ function SearchToggle({
   initialState: boolean
 }) {
   const [search, setSearch] = useCookieState("search", initialState)
+  const [modelId] = useCookieState<ModelId>("model_id", DEFAULT_MODEL, 500)
+  const isSearchSupported = React.useMemo(
+    () => getModelById(modelId).supportsSearch,
+    [modelId]
+  )
+
+  // Automatically disable search when switching to a model that doesn't support it
+  React.useEffect(() => {
+    if (!isSearchSupported && search) {
+      setSearch(false)
+    }
+  }, [isSearchSupported, search, setSearch])
+
   return (
     <Button
       type="button"
       size="sm"
-      variant={search === true ? "default" : "ghost"}
-      className="h-fit gap-1 rounded-full px-2.5 py-1.5 text-sm"
+      variant={search === true && isSearchSupported ? "default" : "ghost"}
+      disabled={!isSearchSupported}
+      className="h-fit gap-1 rounded-full px-2.5 py-1.5 text-sm disabled:opacity-50"
       onClick={() => {
-        setSearch(!search)
+        if (isSearchSupported) {
+          setSearch(!search)
+        }
         textareaRef.current?.focus()
       }}
     >
