@@ -108,9 +108,6 @@ Your approach:
       temperature: modelConfig.temperature,
       maxSteps: search ? 3 : 1,
       tools,
-      ...(search && Object.keys(tools).length > 0
-        ? { toolChoice: "required" }
-        : {}),
       experimental_transform: smoothStream(),
       onChunk: ({ chunk }) => {
         if (chunk.type === "reasoning") {
