@@ -160,25 +160,3 @@ export function ThreadMessages({
     </ScrollWrapper>
   )
 }
-
-/**
- * 
- *  {stream.parts.map((part, index) => {
-              if (part.type === "text") {
-                return (
-                  <MarkdownRenderer key={`${part.type}-${index}`}>
-                    {part.text}
-                  </MarkdownRenderer>
-                )
-              }
-
-              if (part.type === "reasoning") {
-                return (
-                  <Reasoning
-                    key={`${part.type}-${index}`}
-                    details={part.details}
-                  />
-                )
-              }
-            })}
- */

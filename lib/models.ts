@@ -35,9 +35,9 @@ export const SUPPORTED_MODELS = Object.freeze([
 
   // Google Gemini Models
   {
-    id: "gemini-2.5-flash-preview-04-17",
-    name: "Gemini 2.5 Flash",
-    description: "Google's latest preview model with enhanced capabilities",
+    id: "gemini-2.0-flash",
+    name: "Gemini 2.0 Flash",
+    description: "Google's latest stable model with enhanced capabilities",
     provider: "gemini",
     supportsSearch: true,
     supportsImageUploads: true,
@@ -47,8 +47,9 @@ export const SUPPORTED_MODELS = Object.freeze([
   },
   {
     id: "gemini-2.0-flash-exp",
-    name: "Gemini 2.0 Flash",
-    description: "Google's latest stable model with enhanced capabilities",
+    name: "Gemini 2.0 Flash Experimental",
+    description:
+      "Google's latest experimental model with enhanced capabilities",
     provider: "gemini",
     supportsSearch: true,
     supportsImageUploads: true,

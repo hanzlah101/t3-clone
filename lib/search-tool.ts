@@ -21,6 +21,15 @@ export const webSearch = tool({
       livecrawl: "always",
       numResults: 5
     })
+    console.log(
+      results.map((result) => ({
+        title: result.title,
+        url: result.url,
+        content: result.text.slice(0, 1000),
+        publishedDate: result.publishedDate
+      }))
+    )
+
     return results.map((result) => ({
       title: result.title,
       url: result.url,
