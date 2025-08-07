@@ -7,9 +7,14 @@ import { env } from "@/env"
 export const exa = new Exa(env.EXA_API_KEY)
 
 export const webSearch = tool({
-  description: "Search the web for up-to-date & latest information",
+  description:
+    "Search the web for current, up-to-date, and factual information. Use this tool for: recent news, current events, latest product information, real-time data, statistics, technical documentation, or any query that requires current information beyond your training data.",
   parameters: z.object({
-    query: z.string().min(1).max(100).describe("The search query")
+    query: z
+      .string()
+      .min(1)
+      .max(100)
+      .describe("The search query - be specific and focused")
   }),
   execute: async ({ query }) => {
     const { results } = await exa.searchAndContents(query, {
