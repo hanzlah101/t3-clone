@@ -1,5 +1,5 @@
 import { z, ZodError } from "zod/v4"
-import { streamText, type ToolSet } from "ai"
+import { smoothStream, streamText, type ToolSet } from "ai"
 import { ConvexError } from "convex/values"
 import { auth } from "@clerk/nextjs/server"
 
@@ -87,14 +87,31 @@ export async function POST(req: Request) {
     const result = streamText({
       model: modelProvider,
       abortSignal: abortController.signal,
-      system:
-        "You are a helpful assistant." +
-        (search ? " You can use the webSearch tool to search the web." : ""),
+      system: search
+        ? `You are a helpful AI assistant with access to real-time web search capabilities.
+
+IMPORTANT SEARCH GUIDELINES:
+- For ANY question that could benefit from current, recent, or factual information, you MUST use the webSearch tool first
+- Always search for the most recent and accurate information before providing answers
+- Use web search for: current events, recent developments, factual data, statistics, product information, technical documentation, news, etc.
+- Provide comprehensive answers based on the search results
+- Cite sources when possible and mention when information is from web search
+- If initial search results aren't sufficient, perform additional targeted searches with different queries
+
+Your approach:
+1. Analyze the user's question
+2. If it could benefit from current/factual information, use webSearch immediately
+3. Provide a well-researched, accurate response based on the findings`
+        : "You are a helpful AI assistant. Provide accurate, helpful, and informative responses based on your knowledge.",
       messages: formattedMessages,
       maxTokens: modelConfig.maxTokens,
       temperature: modelConfig.temperature,
       maxSteps: search ? 3 : 1,
       tools,
+      ...(search && Object.keys(tools).length > 0
+        ? { toolChoice: "required" }
+        : {}),
+      experimental_transform: smoothStream(),
       onChunk: ({ chunk }) => {
         if (chunk.type === "reasoning") {
           reasoning += chunk.textDelta

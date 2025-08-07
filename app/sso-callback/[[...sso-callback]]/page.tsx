@@ -1,4 +1,5 @@
 import { Spinner } from "@/components/ui/spinner"
+import { ROUTES } from "@/lib/constants"
 import { AuthenticateWithRedirectCallback } from "@clerk/nextjs"
 
 export default function SSOCallback() {
@@ -7,7 +8,10 @@ export default function SSOCallback() {
       <div className="flex min-h-svh items-center justify-center">
         <Spinner />
       </div>
-      <AuthenticateWithRedirectCallback />
+      <AuthenticateWithRedirectCallback
+        signInFallbackRedirectUrl={ROUTES.afterLogin}
+        signUpFallbackRedirectUrl={ROUTES.afterLogin}
+      />
     </>
   )
 }
